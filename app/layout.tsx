@@ -1,12 +1,13 @@
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import UserSync from '@/components/UserSync'
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Learning Tongan App",
-  description: "Learn the Tongan language",
+  description: "Learn the Tongan language with interactive lessons",
 };
 
 export default function RootLayout({
@@ -18,6 +19,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={`${inter.className}`}>
+          <UserSync />
           {children}
         </body>
       </html>

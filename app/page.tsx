@@ -52,7 +52,7 @@ export default function Home() {
           <p className="sm:text-lg mb-4">
             Learning Tongan is hard — this app makes it easier.
           </p>
-          <Link href="/read" className="primary-button">
+          <Link href="/bible/MAT/1" className="primary-button">
             Start learning Tongan
           </Link>
         </div>
