@@ -1,26 +1,65 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #000000;
+    --primary: #8E1616;
+    --beige: #E8C999;
+    --background: #F8EEDF;
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-heading: var(--font-instrument-sans);
+    --font-body: var(--font-karla);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .navbar-link {
+    color: black;
+    transition: color 0.3s;
+    font-weight: 500;
+  }
+
+  .navbar-link:hover {
+    color: var(--primary);
+  }
+
+  .secondary-button {
+    padding: .75rem 2rem;
+    border-radius: 10px;
+    background-color: var(--beige);
+    color: var(--foreground);
+    transition: all 0.3s;
+    font-weight: 600;
+  }
+
+  .secondary-button:hover {
+    background-color: color-mix(in srgb, var(--beige) 75%, transparent);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  .primary-button {
+    padding: .75rem 2rem;
+    border-radius: 10px;
+    background-color: var(--primary);
+    color: var(--background);
+    transition: all 0.3s;
+    font-weight: 600;
+  }
+
+  .primary-button:hover {
+    background-color: color-mix(in srgb, var(--primary) 75%, transparent);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
 }
