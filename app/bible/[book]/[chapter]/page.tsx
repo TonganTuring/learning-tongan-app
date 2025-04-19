@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Type } from 'lucide-react';
 import Link from 'next/link';
-import Navbar from '@/app/components/Navbar';
-import BookSelector from '@/app/components/BookSelector';
-import ReaderSettings from '@/app/components/ReaderSettings';
+import Navbar from '@/components/Navbar';
+import BookSelector from '@/components/BookSelector';
+import ReaderSettings from '@/components/ReaderSettings';
 
 // Import the Bible data
 import esvBible from '@/public/bibles/esv_bible.json';
@@ -275,7 +275,7 @@ export default function BiblePage() {
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--background)] rounded-xl shadow-xl px-4 py-2 border border-black-100">
         <button
           onClick={handleBookSelectorOpen}
-          className="text-sm font-semibold p-3 rounded-full cursor-pointer"
+          className={`font-semibold p-3 rounded-full cursor-pointer ${getFontSizeClass()}`}
         >
           {typedEsvBible[book]?.name} {chapter}
         </button>
@@ -289,16 +289,16 @@ export default function BiblePage() {
               <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out relative ${isParallel ? 'bg-[var(--primary)]' : 'bg-gray-300'}`}>
                 <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${isParallel ? 'translate-x-7' : 'translate-x-1'}`} />
               </div>
-              <span className="text-sm font-semibold">Parallel</span>
+              <span className={`font-semibold ${getFontSizeClass()}`}>Parallel</span>
             </button>
           </div>
           
           <button
             onClick={handleReaderSettingsOpen}
-            className="p-2 hover:bg-[var(--beige)] rounded-full"
+            className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
             aria-label="Text Settings"
           >
-            <Type className="w-5 h-5" />
+            <Type className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'}`} />
           </button>
         </div>        
       </div>
