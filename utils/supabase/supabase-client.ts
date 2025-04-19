@@ -8,44 +8,64 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Create a function to get the authenticated Supabase client
+export const getSupabaseClient = async (token: string) => {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+};
 
 // Flashcard related functions
-export const getFlashcards = async (userId: string) => {
+export const getFlashcards = async (userId: string, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('flashcards')
     .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching flashcards:', error);
+    throw error;
+  }
   return data;
 };
 
 export const addFlashcard = async (
   tonganPhrase: string,
   englishPhrase: string,
-  userId: string
+  userId: string,
+  token: string
 ) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('flashcards')
     .insert([{
       tongan_phrase: tonganPhrase,
       english_phrase: englishPhrase,
       user_id: userId,
-      status: 'new'
+      status: 'none'
     }])
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error adding flashcard:', error);
+    throw error;
+  }
   return data;
 };
 
 export const updateFlashcardStatus = async (
   id: string,
-  status: 'new' | 'learning' | 'review' | 'mastered'
+  status: 'none' | 'good' | 'bad' | 'ok',
+  token: string
 ) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('flashcards')
     .update({
@@ -56,25 +76,34 @@ export const updateFlashcardStatus = async (
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error updating flashcard status:', error);
+    throw error;
+  }
   return data;
 };
 
-export const deleteFlashcard = async (id: string) => {
+export const deleteFlashcard = async (id: string, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { error } = await supabase
     .from('flashcards')
     .delete()
     .eq('id', id);
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error deleting flashcard:', error);
+    throw error;
+  }
 };
 
 // User related functions
 export const updateUserProgress = async (
   userId: string,
   currentBook: string,
-  currentChapter: number
+  currentChapter: number,
+  token: string
 ) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('users')
     .update({
@@ -89,7 +118,8 @@ export const updateUserProgress = async (
   return data;
 };
 
-export const getUserProgress = async (userId: string) => {
+export const getUserProgress = async (userId: string, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('users')
     .select('current_book, current_chapter')
@@ -109,7 +139,8 @@ type Todo = {
   user_id: string;
 };
 
-export const getTodos = async (userId: string) => {
+export const getTodos = async (userId: string, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('todos')
     .select('*')
@@ -120,7 +151,8 @@ export const getTodos = async (userId: string) => {
   return data as Todo[];
 };
 
-export const addTodo = async (title: string, userId: string) => {
+export const addTodo = async (title: string, userId: string, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('todos')
     .insert([{ title, user_id: userId, completed: false }])
@@ -131,7 +163,8 @@ export const addTodo = async (title: string, userId: string) => {
   return data as Todo;
 };
 
-export const updateTodo = async (id: number, completed: boolean) => {
+export const updateTodo = async (id: number, completed: boolean, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { data, error } = await supabase
     .from('todos')
     .update({ completed })
@@ -143,7 +176,8 @@ export const updateTodo = async (id: number, completed: boolean) => {
   return data as Todo;
 };
 
-export const deleteTodo = async (id: number) => {
+export const deleteTodo = async (id: number, token: string) => {
+  const supabase = await getSupabaseClient(token);
   const { error } = await supabase
     .from('todos')
     .delete()

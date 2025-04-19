@@ -1,8 +1,14 @@
 export type User = {
+  id: string;
+  clerk_id: string;
   email: string;
-  created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
   current_book: string | null;
   current_chapter: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export type Flashcard = {

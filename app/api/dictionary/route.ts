@@ -16,6 +16,8 @@ async function translateWithAzure(word: string): Promise<{ tongan: string; engli
       return null;
     }
 
+    console.log('translating word', word);
+
     // Add region to the endpoint if it's not already included
     const region = process.env.AZURE_TRANSLATOR_REGION || 'eastus';
     const endpoint = translatorEndpoint.includes('api.cognitive.microsofttranslator.com') 
@@ -83,16 +85,19 @@ async function initializeDictionary() {
         
         // Store each version of the word
         words.forEach(word => {
-          // Store the exact word
-          dictionaryIndex?.set(word, {
-            tongan: parts[1].trim(),
-            english: englishMeaning
-          });
+          // Only store if the word is not already in the dictionary
+          // This ensures we don't overwrite longer words with shorter ones
+          if (!dictionaryIndex?.has(word)) {
+            dictionaryIndex?.set(word, {
+              tongan: parts[1].trim(),
+              english: englishMeaning
+            });
+          }
 
           // Also store a version with the apostrophe replaced with a regular apostrophe
           if (word.includes("'") || word.includes("ʻ")) {
             const normalizedWord = word.replace(/['ʻ]/g, "'");
-            if (normalizedWord !== word) {
+            if (normalizedWord !== word && !dictionaryIndex?.has(normalizedWord)) {
               dictionaryIndex?.set(normalizedWord, {
                 tongan: parts[1].trim(),
                 english: englishMeaning
@@ -103,14 +108,16 @@ async function initializeDictionary() {
           // Store versions with and without the apostrophe for words like "he'ene" or "'ene"
           if (word.startsWith("'") || word.startsWith("ʻ")) {
             const withoutApostrophe = word.substring(1);
-            dictionaryIndex?.set(withoutApostrophe, {
-              tongan: parts[1].trim(),
-              english: englishMeaning
-            });
+            if (!dictionaryIndex?.has(withoutApostrophe)) {
+              dictionaryIndex?.set(withoutApostrophe, {
+                tongan: parts[1].trim(),
+                english: englishMeaning
+              });
+            }
           }
           if (word.includes("'") || word.includes("ʻ")) {
             const withoutApostrophe = word.replace(/['ʻ]/g, "");
-            if (withoutApostrophe !== word) {
+            if (withoutApostrophe !== word && !dictionaryIndex?.has(withoutApostrophe)) {
               dictionaryIndex?.set(withoutApostrophe, {
                 tongan: parts[1].trim(),
                 english: englishMeaning

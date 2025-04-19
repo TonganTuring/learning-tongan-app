@@ -1,5 +1,7 @@
 'use client';
 
+console.log('=== BIBLE PAGE LOADED ===');
+
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback, useRef, Suspense, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Type, Columns } from 'lucide-react';
@@ -18,8 +20,21 @@ const ReaderSettings = dynamic(() => import('@/components/ReaderSettings'), {
 });
 
 // Add WordLookup import
-const WordLookup = dynamic(() => import('@/components/WordLookup'), {
-  loading: () => null
+const WordLookup = dynamic(() => {
+  console.log('=== DYNAMIC IMPORT START ===');
+  return import('@/components/WordLookup').then(module => {
+    console.log('=== DYNAMIC IMPORT SUCCESS ===');
+    return module.default;
+  }).catch(error => {
+    console.error('=== DYNAMIC IMPORT ERROR ===', error);
+    throw error;
+  });
+}, {
+  loading: () => {
+    console.log('=== WORDLOOKUP LOADING ===');
+    return null;
+  },
+  ssr: false
 });
 
 // Import the Bible data
@@ -151,6 +166,13 @@ export default function BiblePage() {
   const [selectedWord, setSelectedWord] = useState('');
   const [wordPosition, setWordPosition] = useState<{ x: number; y: number } | null>(null);
 
+  // Add effect to monitor state changes
+  useEffect(() => {
+    console.log('=== WORD LOOKUP STATE CHANGED ===');
+    console.log('Selected word:', selectedWord);
+    console.log('Word position:', wordPosition);
+  }, [selectedWord, wordPosition]);
+
   // Add refs for timeout
   const bookSelectorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const readerSettingsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -276,41 +298,75 @@ export default function BiblePage() {
 
   // Add word click handler
   const handleWordClick = (event: React.MouseEvent<HTMLSpanElement>, word: string) => {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    // Clean the word by removing punctuation but preserve capitalization
-    const cleanWord = word
-      .replace(/[.,!?;:"'"'"'"'"']/g, '') // Remove quotes
-      .replace(/\u201C|\u201D/g, '') // Remove specific curly quote characters
-      .trim();
-    
-    setSelectedWord(cleanWord);
-    setWordPosition({
-      x: event.clientX,
-      y: event.clientY
-    });
+    try {
+      window.console.log('=== WORD CLICK HANDLER START ===');
+      window.console.log('Raw word clicked:', word);
+      window.console.log('Event details:', {
+        clientX: event.clientX,
+        clientY: event.clientY,
+        target: event.target,
+        currentTarget: event.currentTarget
+      });
+      
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Clean the word by removing punctuation but preserve apostrophes
+      const cleanWord = word
+        .replace(/[.,!?;:"\u201C\u201D]/g, '') // Remove quotes and other punctuation but keep apostrophes
+        .trim();
+      
+      window.console.log('Cleaned word:', cleanWord);
+      window.console.log('Setting state with:', {
+        word: cleanWord,
+        position: { x: event.clientX, y: event.clientY }
+      });
+      
+      setSelectedWord(cleanWord);
+      setWordPosition({
+        x: event.clientX,
+        y: event.clientY
+      });
+      
+      window.console.log('=== WORD CLICK HANDLER END ===');
+    } catch (error) {
+      window.console.error('Error in handleWordClick:', error);
+    }
   };
 
   // Add close handler
   const handleCloseWordLookup = () => {
+    console.log('=== CLOSING WORD LOOKUP ===');
     setSelectedWord('');
     setWordPosition(null);
   };
 
   // Modify the verse rendering to make words clickable
   const renderTonganText = (text: string) => {
-    return text.split(' ').map((word, index, array) => (
-      <span key={index}>
-        <span
-          className="cursor-pointer hover:text-[var(--primary)] rounded px-0.5"
-          onClick={(e) => handleWordClick(e, word)}
-        >
-          {word}
+    try {
+      window.console.log('Rendering Tongan text:', text);
+      return text.split(' ').map((word, index, array) => (
+        <span key={index}>
+          <span
+            className="cursor-pointer hover:text-[var(--primary)] rounded px-0.5"
+            onClick={(e) => {
+              try {
+                window.console.log('Word span clicked:', word);
+                handleWordClick(e, word);
+              } catch (error) {
+                window.console.error('Error in word click:', error);
+              }
+            }}
+          >
+            {word}
+          </span>
+          {index < array.length - 1 ? ' ' : ''}
         </span>
-        {index < array.length - 1 ? ' ' : ''}
-      </span>
-    ));
+      ));
+    } catch (error) {
+      window.console.error('Error in renderTonganText:', error);
+      return null;
+    }
   };
 
   return (
@@ -448,7 +504,8 @@ export default function BiblePage() {
           onMouseLeave={() => handleBookSelectorHover(false)}
         >
           <button
-            className={`font-semibold p-3 rounded-full cursor-pointer ${getFontSizeClass()}`}
+            className="font-semibold p-3 rounded-full cursor-pointer"
+            onClick={() => setIsBookSelectorOpen(true)}
           >
             {memoizedEsvBible[book]?.name} {chapter}
           </button>
@@ -458,10 +515,10 @@ export default function BiblePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleParallelToggle}
-              className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
+              className="p-2 hover:bg-[var(--beige)] rounded-full"
               aria-label={isParallel ? "Switch to single column" : "Switch to parallel columns"}
             >
-              <Columns className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'} ${isParallel ? 'text-[var(--primary)]' : ''}`} />
+              <Columns className={`w-5 h-5 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
             </button>
           </div>
           
@@ -471,10 +528,10 @@ export default function BiblePage() {
             onMouseLeave={() => handleReaderSettingsHover(false)}
           >
             <button
-              className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
+              className="p-2 hover:bg-[var(--beige)] rounded-full"
               aria-label="Text Settings"
             >
-              <Type className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'}`} />
+              <Type className="w-5 h-5" />
             </button>
           </div>
         </div>        

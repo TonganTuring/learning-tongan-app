@@ -4,17 +4,25 @@ import { supabaseAdmin } from '@/utils/supabase/server'
 
 export async function POST(req: Request) {
   try {
+    console.log('Webhook received - Starting processing')
     const payload = await req.json()
     const headerList = await headers()
     const svix_id = headerList.get("svix-id") || ''
     const svix_timestamp = headerList.get("svix-timestamp") || ''
     const svix_signature = headerList.get("svix-signature") || ''
     
+    console.log('Webhook headers:', {
+      svix_id,
+      svix_timestamp,
+      svix_signature
+    })
+    
     if (!process.env.CLERK_WEBHOOK_SECRET) {
       console.error('Missing CLERK_WEBHOOK_SECRET')
       return new Response('Missing webhook secret', { status: 500 })
     }
 
+    console.log('Verifying webhook signature...')
     const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
     const evt = wh.verify(JSON.stringify(payload), {
       "svix-id": svix_id,
@@ -22,8 +30,8 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as any
 
-    console.log('Processing webhook event:', evt.type)
-    console.log('Webhook payload:', JSON.stringify(payload, null, 2))
+    console.log('Webhook event type:', evt.type)
+    console.log('Full webhook payload:', JSON.stringify(payload, null, 2))
 
     // Handle user creation/update
     if (evt.type === 'user.created' || evt.type === 'user.updated') {
@@ -31,23 +39,28 @@ export async function POST(req: Request) {
       const userData = evt.data || payload.data
       const { id, first_name, last_name, email_addresses, profile_image_url } = userData
       
-      console.log('Syncing user to Supabase:', { 
+      console.log('Preparing to sync user to Supabase:', { 
         id, 
         email: email_addresses?.[0]?.email_address || payload.data?.email,
         first_name: first_name || payload.data?.first_name,
-        last_name: last_name || payload.data?.last_name
+        last_name: last_name || payload.data?.last_name,
+        profile_image_url: profile_image_url || payload.data?.profile_image_url
       })
+      
+      const userToSync = {
+        clerk_id: id || payload.data?.id,
+        email: email_addresses?.[0]?.email_address || payload.data?.email,
+        first_name: first_name || payload.data?.first_name,
+        last_name: last_name || payload.data?.last_name,
+        avatar_url: profile_image_url || payload.data?.profile_image_url,
+        updated_at: new Date().toISOString()
+      }
+      
+      console.log('Attempting Supabase upsert with data:', userToSync)
       
       const { data, error } = await supabaseAdmin
         .from('users')
-        .upsert({
-          clerk_id: id || payload.data?.id,
-          email: email_addresses?.[0]?.email_address || payload.data?.email,
-          first_name: first_name || payload.data?.first_name,
-          last_name: last_name || payload.data?.last_name,
-          avatar_url: profile_image_url || payload.data?.profile_image_url,
-          updated_at: new Date().toISOString()
-        })
+        .upsert(userToSync)
         .select()
 
       if (error) {
@@ -55,7 +68,7 @@ export async function POST(req: Request) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 })
       }
 
-      console.log('User synced successfully:', data)
+      console.log('User synced successfully to Supabase:', data)
     }
 
     // Handle user deletion
@@ -74,12 +87,12 @@ export async function POST(req: Request) {
         return new Response(JSON.stringify({ error: error.message }), { status: 500 })
       }
 
-      console.log('User deleted successfully')
+      console.log('User deleted successfully from Supabase')
     }
 
     return new Response('', { status: 200 })
   } catch (err) {
-    console.error('Webhook error:', err)
+    console.error('Webhook processing error:', err)
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 })
   }
 } 
