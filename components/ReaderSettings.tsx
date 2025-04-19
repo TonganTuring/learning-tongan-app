@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 
 type FontSize = 'small' | 'medium' | 'large';
 
@@ -8,6 +8,13 @@ type ReaderSettingsProps = {
   onClose: () => void;
   onFontSizeChange?: (size: FontSize) => void;
 };
+
+// Memoize the font size options
+const FONT_SIZE_OPTIONS = [
+  { value: 'small', label: 'Aa', className: 'text-sm' },
+  { value: 'medium', label: 'Aa', className: 'text-xl' },
+  { value: 'large', label: 'Aa', className: 'text-3xl' },
+] as const;
 
 export default function ReaderSettings({ isOpen, onClose, onFontSizeChange }: ReaderSettingsProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -21,6 +28,7 @@ export default function ReaderSettings({ isOpen, onClose, onFontSizeChange }: Re
   });
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Memoize the visibility effect
   useEffect(() => {
     if (isOpen) {
       setIsVisible(true);
@@ -32,28 +40,49 @@ export default function ReaderSettings({ isOpen, onClose, onFontSizeChange }: Re
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
+  // Memoize the click outside handler
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      onClose();
+    }
+  }, [onClose]);
 
+  // Memoize the event listener effect
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClickOutside]);
 
-  const handleFontSizeChange = (size: FontSize) => {
+  // Memoize the font size change handler
+  const handleFontSizeChange = useCallback((size: FontSize) => {
     setFontSize(size);
     // Save to localStorage
     localStorage.setItem('fontSize', size);
     onFontSizeChange?.(size);
-  };
+  }, [onFontSizeChange]);
+
+  // Memoize the font size buttons
+  const fontSizeButtons = useMemo(() => {
+    return (
+      <div className="flex rounded-lg overflow-hidden border border-black/10 w-full">
+        {FONT_SIZE_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => handleFontSizeChange(option.value)}
+            className={`flex-1 py-2 ${option.className} ${
+              fontSize === option.value ? 'bg-[#8B2635] text-white' : 'hover:bg-black/5'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    );
+  }, [fontSize, handleFontSizeChange]);
 
   if (!isVisible) return null;
 
@@ -80,26 +109,7 @@ export default function ReaderSettings({ isOpen, onClose, onFontSizeChange }: Re
         <div className="border-t border-black mb-2" />
 
         <div className="px-4 pb-4">
-          <div className="flex rounded-lg overflow-hidden border border-black/10 w-full">
-            <button
-              onClick={() => handleFontSizeChange('small')}
-              className={`flex-1 py-2 text-sm ${fontSize === 'small' ? 'bg-[#8B2635] text-white' : 'hover:bg-black/5'}`}
-            >
-              Aa
-            </button>
-            <button
-              onClick={() => handleFontSizeChange('medium')}
-              className={`flex-1 py-2 text-xl ${fontSize === 'medium' ? 'bg-[#8B2635] text-white' : 'hover:bg-black/5'}`}
-            >
-              Aa
-            </button>
-            <button
-              onClick={() => handleFontSizeChange('large')}
-              className={`flex-1 py-2 text-3xl ${fontSize === 'large' ? 'bg-[#8B2635] text-white' : 'hover:bg-black/5'}`}
-            >
-              Aa
-            </button>
-          </div>
+          {fontSizeButtons}
         </div>
       </div>
     </div>

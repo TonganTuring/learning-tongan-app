@@ -1,12 +1,21 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Type } from 'lucide-react';
+import { useState, useMemo, useCallback, useRef, Suspense } from 'react';
+import { ChevronLeft, ChevronRight, Type, Columns } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
-import BookSelector from '@/components/BookSelector';
-import ReaderSettings from '@/components/ReaderSettings';
+import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
+
+// Lazy load components
+const BookSelector = dynamic(() => import('@/components/BookSelector'), {
+  loading: () => <div className="fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden animate-pulse" />
+});
+
+const ReaderSettings = dynamic(() => import('@/components/ReaderSettings'), {
+  loading: () => <div className="fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[70%] max-w-xs overflow-hidden animate-pulse" />
+});
 
 // Import the Bible data
 import esvBible from '@/public/bibles/esv_bible.json';
@@ -36,83 +45,78 @@ type ProcessedVerse = {
   key: string;
 };
 
-// Type assertions for the imported JSON
-const typedEsvBible = esvBible as Bible;
-const typedTonganBible = tonganBible as Bible;
-
-// Function to process verses and combine those marked with "#"
-function processVerses(verses: Verse[]): ProcessedVerse[] {
-  const processed: ProcessedVerse[] = [];
-  let currentVerse: ProcessedVerse | null = null;
-
-  verses.forEach((verse, index) => {
-    if (verse.number === '#') {
-      // If this is a continuation verse, append it to the previous verse
-      if (currentVerse) {
-        currentVerse.text = `${currentVerse.text} ${verse.text}`;
-      }
-    } else {
-      // If we had a previous verse, push it to the processed array
-      if (currentVerse) {
-        processed.push(currentVerse);
-      }
-      // Start a new verse, keeping the original verse number format (including ranges like "14-17")
-      currentVerse = {
-        number: verse.number,
-        text: verse.text,
-        key: `verse-${index}`
-      };
-    }
-  });
-
-  // Don't forget to push the last verse
-  if (currentVerse) {
-    processed.push(currentVerse);
-  }
-
-  return processed;
-}
-
-// Function to get the previous book's last chapter
-function getPreviousBookLastChapter(currentBook: string): { book: string; chapter: string } | null {
-  const books = Object.keys(typedEsvBible);
-  const currentIndex = books.indexOf(currentBook);
-  
-  if (currentIndex <= 0) return null;
-  
-  const prevBook = books[currentIndex - 1];
-  const prevBookChapters = Object.keys(typedEsvBible[prevBook].chapters);
-  const lastChapter = prevBookChapters[prevBookChapters.length - 1];
-  
-  return {
-    book: prevBook.toLowerCase(),
-    chapter: lastChapter
-  };
-}
-
-// Function to get the next book's first chapter
-function getNextBookFirstChapter(currentBook: string): { book: string; chapter: string } | null {
-  const books = Object.keys(typedEsvBible);
-  const currentIndex = books.indexOf(currentBook);
-  
-  if (currentIndex >= books.length - 1) return null;
-  
-  const nextBook = books[currentIndex + 1];
-  
-  return {
-    book: nextBook.toLowerCase(),
-    chapter: '1'
-  };
-}
-
 export default function BiblePage() {
   const params = useParams();
   const router = useRouter();
   const book = (params.book as string).toUpperCase();
   const chapter = params.chapter as string;
   
+  // Memoize the Bible data
+  const memoizedEsvBible = useMemo(() => esvBible as Bible, []);
+  const memoizedTonganBible = useMemo(() => tonganBible as Bible, []);
+
+  // Memoize the processVerses function
+  const memoizedProcessVerses = useCallback((verses: Verse[]): ProcessedVerse[] => {
+    const processed: ProcessedVerse[] = [];
+    let currentVerse: ProcessedVerse | null = null;
+
+    verses.forEach((verse, index) => {
+      if (verse.number === '#') {
+        if (currentVerse) {
+          currentVerse.text = `${currentVerse.text} ${verse.text}`;
+        }
+      } else {
+        if (currentVerse) {
+          processed.push(currentVerse);
+        }
+        currentVerse = {
+          number: verse.number,
+          text: verse.text,
+          key: `verse-${index}`
+        };
+      }
+    });
+
+    if (currentVerse) {
+      processed.push(currentVerse);
+    }
+
+    return processed;
+  }, []);
+
+  // Memoize the getPreviousBookLastChapter function
+  const memoizedGetPreviousBookLastChapter = useCallback((currentBook: string): { book: string; chapter: string } | null => {
+    const books = Object.keys(memoizedEsvBible);
+    const currentIndex = books.indexOf(currentBook);
+    
+    if (currentIndex <= 0) return null;
+    
+    const prevBook = books[currentIndex - 1];
+    const prevBookChapters = Object.keys(memoizedEsvBible[prevBook].chapters);
+    const lastChapter = prevBookChapters[prevBookChapters.length - 1];
+    
+    return {
+      book: prevBook.toLowerCase(),
+      chapter: lastChapter
+    };
+  }, [memoizedEsvBible]);
+
+  // Memoize the getNextBookFirstChapter function
+  const memoizedGetNextBookFirstChapter = useCallback((currentBook: string): { book: string; chapter: string } | null => {
+    const books = Object.keys(memoizedEsvBible);
+    const currentIndex = books.indexOf(currentBook);
+    
+    if (currentIndex >= books.length - 1) return null;
+    
+    const nextBook = books[currentIndex + 1];
+    
+    return {
+      book: nextBook.toLowerCase(),
+      chapter: '1'
+    };
+  }, [memoizedEsvBible]);
+
   const [isParallel, setIsParallel] = useState(() => {
-    // Initialize from localStorage, default to true if not set
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('parallelMode');
       return saved === null ? true : saved === 'true';
@@ -123,7 +127,6 @@ export default function BiblePage() {
   const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>(() => {
-    // Initialize from localStorage, default to 'small' if not set
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('fontSize');
       return (saved as 'small' | 'medium' | 'large') || 'small';
@@ -131,62 +134,71 @@ export default function BiblePage() {
     return 'small';
   });
   
-  const esvChapter = processVerses(typedEsvBible[book]?.chapters?.[chapter] || []);
-  const tonganChapter = processVerses(typedTonganBible[book]?.chapters?.[chapter] || []);
+  // Memoize processed chapters
+  const { esvChapter, tonganChapter } = useMemo(() => {
+    return {
+      esvChapter: memoizedProcessVerses(memoizedEsvBible[book]?.chapters?.[chapter] || []),
+      tonganChapter: memoizedProcessVerses(memoizedTonganBible[book]?.chapters?.[chapter] || [])
+    };
+  }, [book, chapter, memoizedProcessVerses, memoizedEsvBible, memoizedTonganBible]);
   
   if (!esvChapter.length || !tonganChapter.length) {
     return <div className="p-6">Chapter not found</div>;
   }
 
-  const handleBookSelectorOpen = () => {
+  // Memoize handlers
+  const handleBookSelectorOpen = useCallback(() => {
     setIsReaderSettingsOpen(false);
     setIsBookSelectorOpen(true);
-  };
+  }, []);
 
-  const handleReaderSettingsOpen = () => {
+  const handleReaderSettingsOpen = useCallback(() => {
     setIsBookSelectorOpen(false);
     setIsReaderSettingsOpen(true);
-  };
+  }, []);
 
-  const prevChapter = parseInt(chapter) - 1;
-  const nextChapter = parseInt(chapter) + 1;
-  
-  const prevBookLastChapter = getPreviousBookLastChapter(book);
-  const nextBookFirstChapter = getNextBookFirstChapter(book);
-  
-  const prevLink = prevChapter >= 1 
-    ? `/bible/${book.toLowerCase()}/${prevChapter}`
-    : prevBookLastChapter 
-      ? `/bible/${prevBookLastChapter.book}/${prevBookLastChapter.chapter}`
-      : null;
-      
-  const nextLink = typedEsvBible[book]?.chapters?.[nextChapter.toString()]
-    ? `/bible/${book.toLowerCase()}/${nextChapter}`
-    : nextBookFirstChapter
-      ? `/bible/${nextBookFirstChapter.book}/${nextBookFirstChapter.chapter}`
-      : null;
+  // Memoize navigation links
+  const { prevLink, nextLink } = useMemo(() => {
+    const prevChapter = parseInt(chapter) - 1;
+    const nextChapter = parseInt(chapter) + 1;
+    
+    const prevBookLastChapter = memoizedGetPreviousBookLastChapter(book);
+    const nextBookFirstChapter = memoizedGetNextBookFirstChapter(book);
+    
+    return {
+      prevLink: prevChapter >= 1 
+        ? `/bible/${book.toLowerCase()}/${prevChapter}`
+        : prevBookLastChapter 
+          ? `/bible/${prevBookLastChapter.book}/${prevBookLastChapter.chapter}`
+          : null,
+      nextLink: memoizedEsvBible[book]?.chapters?.[nextChapter.toString()]
+        ? `/bible/${book.toLowerCase()}/${nextChapter}`
+        : nextBookFirstChapter
+          ? `/bible/${nextBookFirstChapter.book}/${nextBookFirstChapter.chapter}`
+          : null
+    };
+  }, [book, chapter, memoizedGetPreviousBookLastChapter, memoizedGetNextBookFirstChapter, memoizedEsvBible]);
 
-  const handleBookSelect = (selectedBook: string) => {
+  const handleBookSelect = useCallback((selectedBook: string) => {
     const [book, chapter] = selectedBook.split('/');
     router.push(`/bible/${book.toLowerCase()}/${chapter}`);
-  };
+  }, [router]);
 
-  const handleParallelToggle = () => {
+  const handleParallelToggle = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
       const newValue = !isParallel;
       setIsParallel(newValue);
-      // Save to localStorage
       localStorage.setItem('parallelMode', String(newValue));
       setIsVisible(true);
     }, 200);
-  };
+  }, [isParallel]);
 
-  const handleFontSizeChange = (size: 'small' | 'medium' | 'large') => {
+  const handleFontSizeChange = useCallback((size: 'small' | 'medium' | 'large') => {
     setFontSize(size);
-  };
+  }, []);
 
-  const getFontSizeClass = () => {
+  const getFontSizeClass = useCallback(() => {
     switch (fontSize) {
       case 'small':
         return 'text-base';
@@ -195,7 +207,25 @@ export default function BiblePage() {
       case 'large':
         return 'text-xl';
     }
-  };
+  }, [fontSize]);
+
+  // Virtualization setup
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: esvChapter.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 80,
+    overscan: 10,
+    measureElement: (element) => {
+      if (!element) return 80;
+      
+      // Get the actual height of the entire row element
+      const rowHeight = element.getBoundingClientRect().height;
+      
+      // Add a more generous buffer to prevent any overlap
+      return rowHeight + 16;
+    },
+  });
 
   return (
     <main className="max-w-6xl mx-auto p-6 pb-24">
@@ -215,81 +245,70 @@ export default function BiblePage() {
     
       <div className="flex justify-center items-center mb-8 mt-6">
         <h1 className="text-4xl font-bold text-center">
-          {typedEsvBible[book]?.name} {chapter}
+          {memoizedTonganBible[book]?.name} {chapter}
         </h1>
       </div>
       
-      <div className={`px-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="space-y-4">
-          {esvChapter.map((verse, index) => {
-            const currentVerseNum = parseInt(verse.number);
-            
-            // Find if this verse is part of a range in Tongan
-            const tonganRangeVerse = tonganChapter.find(v => {
-              if (!v.number.includes('-')) return false;
-              const [start, end] = v.number.split('-').map(Number);
-              return currentVerseNum >= start && currentVerseNum <= end;
-            });
+      <div className="px-4">
+        {esvChapter.map((verse, index) => {
+          const tonganVerse = tonganChapter.find(v => v.number === verse.number);
+          const tonganRangeVerse = tonganChapter.find(v => {
+            if (!v.number.includes('-')) return false;
+            const [start, end] = v.number.split('-').map(Number);
+            return parseInt(verse.number) >= start && parseInt(verse.number) <= end;
+          });
 
-            // If this verse is in the middle or end of a range, skip it
-            if (tonganRangeVerse && currentVerseNum > parseInt(tonganRangeVerse.number.split('-')[0])) {
-              return null;
-            }
+          const currentVerseNum = parseInt(verse.number);
+          if (tonganRangeVerse && currentVerseNum > parseInt(tonganRangeVerse.number.split('-')[0])) {
+            return null;
+          }
 
-            // Find the regular Tongan verse (non-range)
-            const tonganVerse = tonganChapter.find(v => v.number === verse.number);
-
-            // If this is the start of a range, collect all English verses in the range
-            let combinedEnglishVerses = [];
-            if (tonganRangeVerse) {
-              const [start, end] = tonganRangeVerse.number.split('-').map(Number);
-              for (let i = start; i <= end; i++) {
-                const rangeVerse = esvChapter.find(v => parseInt(v.number) === i);
-                if (rangeVerse) {
-                  combinedEnglishVerses.push(rangeVerse);
-                }
+          let combinedEnglishVerses = [];
+          if (tonganRangeVerse) {
+            const [start, end] = tonganRangeVerse.number.split('-').map(Number);
+            for (let i = start; i <= end; i++) {
+              const rangeVerse = esvChapter.find(v => parseInt(v.number) === i);
+              if (rangeVerse) {
+                combinedEnglishVerses.push(rangeVerse);
               }
             }
+          }
 
-            return (
-              <div 
-                key={`verse-${verse.number}`} 
-                className={`${isParallel ? 'flex gap-8' : 'flex'}`}
-              >
-                {/* ESV Bible - always show in parallel mode */}
-                {isParallel && (
-                  <div className="flex-1 flex items-start">
-                    {combinedEnglishVerses.length > 0 ? (
-                      <div className="flex-1">
-                        {combinedEnglishVerses.map((englishVerse, i) => (
-                          <div key={`combined-${englishVerse.number}`} className="flex items-start mb-2">
-                            <span className="font-semibold mr-2 min-w-[2rem] text-right">{englishVerse.number}</span>
-                            <span className={`flex-1 ${getFontSizeClass()}`}>{englishVerse.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <>
-                        <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
-                        <span className={`flex-1 ${getFontSizeClass()}`}>{verse.text}</span>
-                      </>
-                    )}
-                  </div>
-                )}
+          return (
+            <div key={verse.number} className="flex mb-4">
+              {isParallel && (
+                <div className="flex-1 pr-4">
+                  {combinedEnglishVerses.length > 0 ? (
+                    <div>
+                      {combinedEnglishVerses.map((englishVerse) => (
+                        <div key={`combined-${englishVerse.number}`} className="flex">
+                          <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">{englishVerse.number}</span>
+                          <span className={getFontSizeClass()}>{englishVerse.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex">
+                      <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">{verse.number}</span>
+                      <span className={getFontSizeClass()}>{verse.text}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                {/* Tongan Bible */}
-                <div className={`${isParallel ? 'w-1/2' : 'w-full'} flex items-start`}>
-                  <span className="font-semibold mr-2 min-w-[2rem] text-right">
+              <div className={isParallel ? 'w-1/2' : 'w-full'}>
+                <div className="flex">
+                  <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">
                     {tonganRangeVerse?.number || tonganVerse?.number || verse.number}
                   </span>
-                  <span className={`flex-1 ${getFontSizeClass()}`}>
+                  <span className={getFontSizeClass()}>
                     {tonganRangeVerse?.text || tonganVerse?.text || ''}
                   </span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
       
       <div className="fixed inset-y-0 left-0 right-0 pointer-events-none flex items-center justify-between px-4">
@@ -322,19 +341,17 @@ export default function BiblePage() {
           onClick={handleBookSelectorOpen}
           className={`font-semibold p-3 rounded-full cursor-pointer ${getFontSizeClass()}`}
         >
-          {typedEsvBible[book]?.name} {chapter}
+          {memoizedEsvBible[book]?.name} {chapter}
         </button>
 
         <div className="flex items-center gap-4 px-4">
           <div className="flex items-center gap-2">
             <button
               onClick={handleParallelToggle}
-              className="flex items-center gap-2"
+              className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
+              aria-label={isParallel ? "Switch to single column" : "Switch to parallel columns"}
             >
-              <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out relative ${isParallel ? 'bg-[var(--primary)]' : 'bg-gray-300'}`}>
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${isParallel ? 'translate-x-7' : 'translate-x-1'}`} />
-              </div>
-              <span className={`font-semibold ${getFontSizeClass()}`}>Parallel</span>
+              <Columns className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'} ${isParallel ? 'text-[var(--primary)]' : ''}`} />
             </button>
           </div>
           
