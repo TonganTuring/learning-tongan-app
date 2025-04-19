@@ -1,10 +1,11 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Type } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
+import BookSelector from '@/app/components/BookSelector';
 
 // Import the Bible data
 import esvBible from '@/public/bibles/esv_bible.json';
@@ -71,12 +72,54 @@ function processVerses(verses: Verse[]): ProcessedVerse[] {
   return processed;
 }
 
+// Function to get the previous book's last chapter
+function getPreviousBookLastChapter(currentBook: string): { book: string; chapter: string } | null {
+  const books = Object.keys(typedEsvBible);
+  const currentIndex = books.indexOf(currentBook);
+  
+  if (currentIndex <= 0) return null;
+  
+  const prevBook = books[currentIndex - 1];
+  const prevBookChapters = Object.keys(typedEsvBible[prevBook].chapters);
+  const lastChapter = prevBookChapters[prevBookChapters.length - 1];
+  
+  return {
+    book: prevBook.toLowerCase(),
+    chapter: lastChapter
+  };
+}
+
+// Function to get the next book's first chapter
+function getNextBookFirstChapter(currentBook: string): { book: string; chapter: string } | null {
+  const books = Object.keys(typedEsvBible);
+  const currentIndex = books.indexOf(currentBook);
+  
+  if (currentIndex >= books.length - 1) return null;
+  
+  const nextBook = books[currentIndex + 1];
+  
+  return {
+    book: nextBook.toLowerCase(),
+    chapter: '1'
+  };
+}
+
 export default function BiblePage() {
   const params = useParams();
+  const router = useRouter();
   const book = (params.book as string).toUpperCase();
   const chapter = params.chapter as string;
   
-  const [isParallel, setIsParallel] = useState(true);
+  const [isParallel, setIsParallel] = useState(() => {
+    // Initialize from localStorage, default to true if not set
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('parallelMode');
+      return saved === null ? true : saved === 'true';
+    }
+    return true;
+  });
+  const [isBookSelectorOpen, setIsBookSelectorOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   
   const esvChapter = processVerses(typedEsvBible[book]?.chapters?.[chapter] || []);
   const tonganChapter = processVerses(typedTonganBible[book]?.chapters?.[chapter] || []);
@@ -85,56 +128,137 @@ export default function BiblePage() {
     return <div className="p-6">Chapter not found</div>;
   }
 
+  const prevChapter = parseInt(chapter) - 1;
+  const nextChapter = parseInt(chapter) + 1;
+  
+  const prevBookLastChapter = getPreviousBookLastChapter(book);
+  const nextBookFirstChapter = getNextBookFirstChapter(book);
+  
+  const prevLink = prevChapter >= 1 
+    ? `/bible/${book.toLowerCase()}/${prevChapter}`
+    : prevBookLastChapter 
+      ? `/bible/${prevBookLastChapter.book}/${prevBookLastChapter.chapter}`
+      : null;
+      
+  const nextLink = typedEsvBible[book]?.chapters?.[nextChapter.toString()]
+    ? `/bible/${book.toLowerCase()}/${nextChapter}`
+    : nextBookFirstChapter
+      ? `/bible/${nextBookFirstChapter.book}/${nextBookFirstChapter.chapter}`
+      : null;
+
+  const handleBookSelect = (selectedBook: string) => {
+    const [book, chapter] = selectedBook.split('/');
+    router.push(`/bible/${book.toLowerCase()}/${chapter}`);
+  };
+
+  const handleParallelToggle = () => {
+    setIsVisible(false);
+    setTimeout(() => {
+      const newValue = !isParallel;
+      setIsParallel(newValue);
+      // Save to localStorage
+      localStorage.setItem('parallelMode', String(newValue));
+      setIsVisible(true);
+    }, 200);
+  };
+
   return (
-    <main className="max-w-6xl mx-auto p-6"> 
-    <Navbar />
+    <main className="max-w-6xl mx-auto p-6 pb-24">
+      <Navbar />
+      
+      <BookSelector
+        isOpen={isBookSelectorOpen}
+        onClose={() => setIsBookSelectorOpen(false)}
+        onSelectBook={handleBookSelect}
+      />
     
       <div className="flex justify-center items-center mb-8 mt-6">
         <h1 className="text-4xl font-bold text-center">
           {typedEsvBible[book]?.name} {chapter}
         </h1>
-        
       </div>
       
-      <div className={`grid ${isParallel ? 'grid-cols-2 gap-8' : 'grid-cols-1'}`}>
-        {/* ESV Bible */}
-        <div className={`space-y-4 ${!isParallel && !isParallel ? 'hidden' : ''}`}>
-          <h2 className="text-xl font-semibold mb-4">English (ESV)</h2>
-          {esvChapter.map((verse) => (
-            <div key={`esv-${verse.key}`} className="verse-container">
-              <span className="font-semibold mr-2">{verse.number}</span>
-              <span>{verse.text}</span>
-            </div>
-          ))}
-        </div>
+      <div className={`px-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className="space-y-4">
+          {esvChapter.map((verse) => {
+            const tonganVerse = tonganChapter.find(v => v.number === verse.number);
+            return (
+              <div 
+                key={`verse-${verse.number}`} 
+                className={`${isParallel ? 'flex gap-8' : 'flex'}`}
+              >
+                {/* ESV Bible - only show in parallel mode */}
+                {isParallel && (
+                  <div className="flex-1 flex items-start">
+                    <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
+                    <span className="flex-1">{verse.text}</span>
+                  </div>
+                )}
 
-        {/* Tongan Bible */}
-        <div className={`space-y-4 ${!isParallel && isParallel ? 'hidden' : ''}`}>
-          <h2 className="text-xl font-semibold mb-4">Tongan</h2>
-          {tonganChapter.map((verse) => (
-            <div key={`tongan-${verse.key}`} className="verse-container">
-              <span className="font-semibold mr-2">{verse.number}</span>
-              <span>{verse.text}</span>
-            </div>
-          ))}
+                {/* Tongan Bible */}
+                <div className={`${isParallel ? 'w-1/2' : 'w-full'} flex items-start`}>
+                  <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
+                  <span className="flex-1">{tonganVerse?.text || ''}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       
-      <div className="flex justify-between mt-8">
-        <Link
-          href={`/bible/${book.toLowerCase()}/${parseInt(chapter) - 1}`}
-          className={`flex items-center ${parseInt(chapter) <= 1 ? 'invisible' : ''}`}
+      <div className="fixed inset-y-0 left-0 right-0 pointer-events-none flex items-center justify-between px-4">
+        <div className="flex-1">
+          {prevLink && (
+            <Link
+              href={prevLink}
+              className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
+              aria-label="Previous Chapter"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </Link>
+          )}
+        </div>
+        <div className="flex-1 flex justify-end">
+          {nextLink && (
+            <Link
+              href={nextLink}
+              className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
+              aria-label="Next Chapter"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--background)] rounded-xl shadow-xl px-4 py-2 border border-black-100">
+        <button
+          onClick={() => setIsBookSelectorOpen(true)}
+          className="text-sm font-semibold p-3 rounded-full cursor-pointer"
         >
-          <ChevronLeft className="w-6 h-6" />
-          Previous Chapter
-        </Link>
-        <Link
-          href={`/bible/${book.toLowerCase()}/${parseInt(chapter) + 1}`}
-          className="flex items-center"
-        >
-          Next Chapter
-          <ChevronRight className="w-6 h-6" />
-        </Link>
+          {typedEsvBible[book]?.name} {chapter}
+        </button>
+
+        <div className="flex items-center gap-4 px-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleParallelToggle}
+              className="flex items-center gap-2"
+            >
+              <div className={`w-12 h-6 rounded-full transition-colors duration-200 ease-in-out relative ${isParallel ? 'bg-[var(--primary)]' : 'bg-gray-300'}`}>
+                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${isParallel ? 'translate-x-7' : 'translate-x-1'}`} />
+              </div>
+              <span className="text-sm font-semibold">Parallel</span>
+            </button>
+          </div>
+          
+          <button
+            className="p-2 hover:bg-gray-100 rounded-full"
+            aria-label="Text Settings"
+          >
+            <Type className="w-5 h-5" />
+          </button>
+        </div>        
       </div>
     </main>
   );

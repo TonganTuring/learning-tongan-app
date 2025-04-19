@@ -25,6 +25,10 @@
 }
 
 @layer components {
+  button {
+    cursor: pointer;
+  }
+
   .navbar-link {
     color: black;
     transition: color 0.3s;
@@ -42,11 +46,13 @@
     color: var(--foreground);
     transition: all 0.3s;
     font-weight: 600;
+    cursor: pointer;
   }
 
   .secondary-button:hover {
     background-color: color-mix(in srgb, var(--beige) 75%, transparent);
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    cursor: pointer;
   }
 
   .primary-button {
@@ -56,10 +62,41 @@
     color: var(--background);
     transition: all 0.3s;
     font-weight: 600;
+    cursor: pointer;
   }
 
   .primary-button:hover {
     background-color: color-mix(in srgb, var(--primary) 75%, transparent);
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
   }
 }
