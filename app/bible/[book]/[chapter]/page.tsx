@@ -497,7 +497,7 @@ export default function BiblePage() {
         </div>
       </div>
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--background)] rounded-xl shadow-xl px-4 py-2 border border-black-100">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white rounded-xl shadow-xl px-4 py-2 border border-black-100">
         <div 
           className="relative"
           onMouseEnter={() => handleBookSelectorHover(true)}

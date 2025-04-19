@@ -31,7 +31,7 @@ export default function Navbar() {
                 Dashboard
               </Link>
               <Link
-                href="/edit-flashcards"
+                href="/edit"
                 className="navbar-link"
               >
                 Edit Flashcards
@@ -45,10 +45,10 @@ export default function Navbar() {
             Read Tongan
           </Link>
           <Link
-            href="/learn"
+            href="/study"
             className="navbar-link"
           >
-            Learn Tongan
+            Study Tongan
           </Link>
         </div>
 

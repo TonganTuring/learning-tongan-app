@@ -18,7 +18,7 @@ export type Flashcard = {
   english_phrase: string;
   last_reviewed_at: string | null;
   status: 'none' | 'good' | 'bad' | 'ok';
-  user_id: string;
+  clerk_user_id: string;
 }
 
 export type Database = {
@@ -26,8 +26,8 @@ export type Database = {
     Tables: {
       users: {
         Row: User;
-        Insert: Omit<User, 'created_at'>;
-        Update: Partial<Omit<User, 'created_at'>>;
+        Insert: Omit<User, 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<User, 'created_at' | 'updated_at'>>;
       };
       flashcards: {
         Row: Flashcard;

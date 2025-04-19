@@ -112,7 +112,7 @@ export default function BookSelector({ isOpen, onClose, onSelectBook, onMouseLea
     <div 
       ref={menuRef}
       onMouseLeave={onMouseLeave}
-      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
+      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-white border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
         isOpen ? 'animate-[slideUp_0.3s_ease-out]' : 'animate-[slideDown_0.3s_ease-out]'
       }`}
     >

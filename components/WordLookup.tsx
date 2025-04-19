@@ -153,7 +153,7 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
       const { error: flashcardError } = await supabase
         .from('flashcards')
         .insert({
-          tongan_phrase: definition.tongan,
+          tongan_phrase: word,
           english_phrase: definition.english,
           clerk_user_id: user.id,
           status: 'none' as FlashcardStatus,
@@ -219,7 +219,7 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
   return (
     <div
       ref={popupRef}
-      className="fixed bg-[var(--background)] border border-black rounded-xl p-4 min-w-[200px] max-w-[300px] z-50"
+      className="fixed bg-white border border-black rounded-xl p-4 min-w-[200px] max-w-[300px] z-50"
       style={{ 
         left: `${x}px`,
         top: `${y}px`
