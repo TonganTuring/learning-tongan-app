@@ -1,5 +1,5 @@
 import { X, ArrowLeft } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 type BookSelectorProps = {
   isOpen: boolean;
@@ -43,6 +43,7 @@ export default function BookSelector({ isOpen, onClose, onSelectBook }: BookSele
   const [filterText, setFilterText] = useState('');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -56,6 +57,22 @@ export default function BookSelector({ isOpen, onClose, onSelectBook }: BookSele
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const filteredBooks = Object.entries(books).reduce((acc, [testament, bookList]) => {
     const filteredBookList = bookList.filter(book => 
@@ -95,9 +112,12 @@ export default function BookSelector({ isOpen, onClose, onSelectBook }: BookSele
   if (!isVisible) return null;
 
   return (
-    <div className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
-      isOpen ? 'animate-[slideUp_0.5s_ease-out]' : 'animate-[slideDown_0.3s_ease-in]'
-    }`}>
+    <div 
+      ref={menuRef}
+      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
+        isOpen ? 'animate-[slideUp_0.5s_ease-out]' : 'animate-[slideDown_0.3s_ease-in]'
+      }`}
+    >
       <div className="h-full flex flex-col">
         <div className="px-3 pb-1 pt-3 flex justify-between items-center">
           <button

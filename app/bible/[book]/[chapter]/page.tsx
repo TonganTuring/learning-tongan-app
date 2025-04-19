@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Type } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/app/components/Navbar';
 import BookSelector from '@/app/components/BookSelector';
+import ReaderSettings from '@/app/components/ReaderSettings';
 
 // Import the Bible data
 import esvBible from '@/public/bibles/esv_bible.json';
@@ -119,7 +120,16 @@ export default function BiblePage() {
     return true;
   });
   const [isBookSelectorOpen, setIsBookSelectorOpen] = useState(false);
+  const [isReaderSettingsOpen, setIsReaderSettingsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>(() => {
+    // Initialize from localStorage, default to 'small' if not set
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('fontSize');
+      return (saved as 'small' | 'medium' | 'large') || 'small';
+    }
+    return 'small';
+  });
   
   const esvChapter = processVerses(typedEsvBible[book]?.chapters?.[chapter] || []);
   const tonganChapter = processVerses(typedTonganBible[book]?.chapters?.[chapter] || []);
@@ -127,6 +137,16 @@ export default function BiblePage() {
   if (!esvChapter.length || !tonganChapter.length) {
     return <div className="p-6">Chapter not found</div>;
   }
+
+  const handleBookSelectorOpen = () => {
+    setIsReaderSettingsOpen(false);
+    setIsBookSelectorOpen(true);
+  };
+
+  const handleReaderSettingsOpen = () => {
+    setIsBookSelectorOpen(false);
+    setIsReaderSettingsOpen(true);
+  };
 
   const prevChapter = parseInt(chapter) - 1;
   const nextChapter = parseInt(chapter) + 1;
@@ -162,6 +182,21 @@ export default function BiblePage() {
     }, 200);
   };
 
+  const handleFontSizeChange = (size: 'small' | 'medium' | 'large') => {
+    setFontSize(size);
+  };
+
+  const getFontSizeClass = () => {
+    switch (fontSize) {
+      case 'small':
+        return 'text-base';
+      case 'medium':
+        return 'text-lg';
+      case 'large':
+        return 'text-xl';
+    }
+  };
+
   return (
     <main className="max-w-6xl mx-auto p-6 pb-24">
       <Navbar />
@@ -170,6 +205,12 @@ export default function BiblePage() {
         isOpen={isBookSelectorOpen}
         onClose={() => setIsBookSelectorOpen(false)}
         onSelectBook={handleBookSelect}
+      />
+
+      <ReaderSettings
+        isOpen={isReaderSettingsOpen}
+        onClose={() => setIsReaderSettingsOpen(false)}
+        onFontSizeChange={handleFontSizeChange}
       />
     
       <div className="flex justify-center items-center mb-8 mt-6">
@@ -191,14 +232,14 @@ export default function BiblePage() {
                 {isParallel && (
                   <div className="flex-1 flex items-start">
                     <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
-                    <span className="flex-1">{verse.text}</span>
+                    <span className={`flex-1 ${getFontSizeClass()}`}>{verse.text}</span>
                   </div>
                 )}
 
                 {/* Tongan Bible */}
                 <div className={`${isParallel ? 'w-1/2' : 'w-full'} flex items-start`}>
                   <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
-                  <span className="flex-1">{tonganVerse?.text || ''}</span>
+                  <span className={`flex-1 ${getFontSizeClass()}`}>{tonganVerse?.text || ''}</span>
                 </div>
               </div>
             );
@@ -233,7 +274,7 @@ export default function BiblePage() {
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--background)] rounded-xl shadow-xl px-4 py-2 border border-black-100">
         <button
-          onClick={() => setIsBookSelectorOpen(true)}
+          onClick={handleBookSelectorOpen}
           className="text-sm font-semibold p-3 rounded-full cursor-pointer"
         >
           {typedEsvBible[book]?.name} {chapter}
@@ -253,7 +294,8 @@ export default function BiblePage() {
           </div>
           
           <button
-            className="p-2 hover:bg-gray-100 rounded-full"
+            onClick={handleReaderSettingsOpen}
+            className="p-2 hover:bg-[var(--beige)] rounded-full"
             aria-label="Text Settings"
           >
             <Type className="w-5 h-5" />
