@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useMemo, useCallback, useRef, Suspense } from 'react';
+import { useState, useMemo, useCallback, useRef, Suspense, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Type, Columns } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -151,20 +151,58 @@ export default function BiblePage() {
   const [selectedWord, setSelectedWord] = useState('');
   const [wordPosition, setWordPosition] = useState<{ x: number; y: number } | null>(null);
 
+  // Add refs for timeout
+  const bookSelectorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const readerSettingsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Add hover state handlers with delay
+  const handleBookSelectorHover = useCallback((isHovering: boolean) => {
+    if (bookSelectorTimeoutRef.current) {
+      clearTimeout(bookSelectorTimeoutRef.current);
+    }
+    
+    if (isHovering) {
+      setIsReaderSettingsOpen(false);
+      setIsBookSelectorOpen(true);
+    } else {
+      bookSelectorTimeoutRef.current = setTimeout(() => {
+        // Let the component handle its own closing animation
+        setIsBookSelectorOpen(false);
+      }, 200); // 200ms delay before closing
+    }
+  }, []);
+
+  const handleReaderSettingsHover = useCallback((isHovering: boolean) => {
+    if (readerSettingsTimeoutRef.current) {
+      clearTimeout(readerSettingsTimeoutRef.current);
+    }
+    
+    if (isHovering) {
+      setIsBookSelectorOpen(false);
+      setIsReaderSettingsOpen(true);
+    } else {
+      readerSettingsTimeoutRef.current = setTimeout(() => {
+        // Let the component handle its own closing animation
+        setIsReaderSettingsOpen(false);
+      }, 200); // 200ms delay before closing
+    }
+  }, []);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (bookSelectorTimeoutRef.current) {
+        clearTimeout(bookSelectorTimeoutRef.current);
+      }
+      if (readerSettingsTimeoutRef.current) {
+        clearTimeout(readerSettingsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   if (!esvChapter.length || !tonganChapter.length) {
     return <div className="p-6">Chapter not found</div>;
   }
-
-  // Memoize handlers
-  const handleBookSelectorOpen = useCallback(() => {
-    setIsReaderSettingsOpen(false);
-    setIsBookSelectorOpen(true);
-  }, []);
-
-  const handleReaderSettingsOpen = useCallback(() => {
-    setIsBookSelectorOpen(false);
-    setIsReaderSettingsOpen(true);
-  }, []);
 
   // Memoize navigation links
   const { prevLink, nextLink } = useMemo(() => {
@@ -279,17 +317,29 @@ export default function BiblePage() {
     <main className="max-w-6xl mx-auto p-6 pb-24">
       <Navbar />
       
-      <BookSelector
-        isOpen={isBookSelectorOpen}
-        onClose={() => setIsBookSelectorOpen(false)}
-        onSelectBook={handleBookSelect}
-      />
+      <div 
+        className="relative"
+        onMouseEnter={() => handleBookSelectorHover(true)}
+        onMouseLeave={() => handleBookSelectorHover(false)}
+      >
+        <BookSelector
+          isOpen={isBookSelectorOpen}
+          onClose={() => setIsBookSelectorOpen(false)}
+          onSelectBook={handleBookSelect}
+        />
+      </div>
 
-      <ReaderSettings
-        isOpen={isReaderSettingsOpen}
-        onClose={() => setIsReaderSettingsOpen(false)}
-        onFontSizeChange={handleFontSizeChange}
-      />
+      <div 
+        className="relative"
+        onMouseEnter={() => handleReaderSettingsHover(true)}
+        onMouseLeave={() => handleReaderSettingsHover(false)}
+      >
+        <ReaderSettings
+          isOpen={isReaderSettingsOpen}
+          onClose={() => setIsReaderSettingsOpen(false)}
+          onFontSizeChange={handleFontSizeChange}
+        />
+      </div>
 
       {/* Add WordLookup component */}
       <WordLookup
@@ -392,12 +442,17 @@ export default function BiblePage() {
       </div>
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--background)] rounded-xl shadow-xl px-4 py-2 border border-black-100">
-        <button
-          onClick={handleBookSelectorOpen}
-          className={`font-semibold p-3 rounded-full cursor-pointer ${getFontSizeClass()}`}
+        <div 
+          className="relative"
+          onMouseEnter={() => handleBookSelectorHover(true)}
+          onMouseLeave={() => handleBookSelectorHover(false)}
         >
-          {memoizedEsvBible[book]?.name} {chapter}
-        </button>
+          <button
+            className={`font-semibold p-3 rounded-full cursor-pointer ${getFontSizeClass()}`}
+          >
+            {memoizedEsvBible[book]?.name} {chapter}
+          </button>
+        </div>
 
         <div className="flex items-center gap-4 px-4">
           <div className="flex items-center gap-2">
@@ -410,13 +465,18 @@ export default function BiblePage() {
             </button>
           </div>
           
-          <button
-            onClick={handleReaderSettingsOpen}
-            className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
-            aria-label="Text Settings"
+          <div 
+            className="relative"
+            onMouseEnter={() => handleReaderSettingsHover(true)}
+            onMouseLeave={() => handleReaderSettingsHover(false)}
           >
-            <Type className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'}`} />
-          </button>
+            <button
+              className={`p-2 hover:bg-[var(--beige)] rounded-full ${getFontSizeClass()}`}
+              aria-label="Text Settings"
+            >
+              <Type className={`${fontSize === 'small' ? 'w-5 h-5' : fontSize === 'medium' ? 'w-6 h-6' : 'w-7 h-7'}`} />
+            </button>
+          </div>
         </div>        
       </div>
     </main>

@@ -1,10 +1,11 @@
 import { X, ArrowLeft } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 type BookSelectorProps = {
   isOpen: boolean;
   onClose: () => void;
   onSelectBook: (book: string) => void;
+  onMouseLeave?: () => void;
 };
 
 const books = [
@@ -59,30 +60,39 @@ const bookCodes: Record<string, string> = {
   '2 Peter': '2PE', '1 John': '1JN', '2 John': '2JN', '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
 };
 
-export default function BookSelector({ isOpen, onClose, onSelectBook }: BookSelectorProps) {
+export default function BookSelector({ isOpen, onClose, onSelectBook, onMouseLeave }: BookSelectorProps) {
   const [filterText, setFilterText] = useState('');
   const [selectedBook, setSelectedBook] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Handle visibility with animation
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
+  // Memoize the click outside handler
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      onClose();
+    }
+  }, [onClose]);
+
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
-
-  const filteredBooks = books.filter(book => 
-    book.toLowerCase().includes(filterText.toLowerCase())
-  );
+  }, [isOpen, handleClickOutside]);
 
   const handleChapterSelect = (chapter: number) => {
     if (selectedBook) {
@@ -92,12 +102,19 @@ export default function BookSelector({ isOpen, onClose, onSelectBook }: BookSele
     }
   };
 
-  if (!isOpen) return null;
+  const filteredBooks = books.filter(book => 
+    book.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  if (!isVisible) return null;
 
   return (
     <div 
       ref={menuRef}
-      className="fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden animate-[slideUp_0.3s_ease-out]"
+      onMouseLeave={onMouseLeave}
+      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
+        isOpen ? 'animate-[slideUp_0.3s_ease-out]' : 'animate-[slideDown_0.3s_ease-out]'
+      }`}
     >
       <div className="h-full flex flex-col">
         <div className="px-3 pb-1 pt-3 flex justify-between items-center">

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useUser, UserButton } from "@clerk/nextjs";
 
 export default function Navbar() {
   const { isSignedIn } = useUser();
@@ -11,7 +11,7 @@ export default function Navbar() {
     <div className="w-full flex justify-center p-4">
       <nav className="flex items-center justify-between px-4 py-4 max-w-6xl w-full border border-black/5 bg-white/70 backdrop-blur-md shadow-sm rounded-xl">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:text-[var(--primary)] transition-colors">
             <Image
               src="/logo.svg"
               alt="LearningTongan.com Logo"
@@ -39,7 +39,7 @@ export default function Navbar() {
             </>
           )}
           <Link
-            href="/read"
+            href="/bible/gen/1"
             className="navbar-link"
           >
             Read Tongan
@@ -54,11 +54,17 @@ export default function Navbar() {
 
         <div>
           {isSignedIn ? (
-            <SignOutButton>
-              <Link href="" className="secondary-button">
-                Sign Out
-              </Link>
-            </SignOutButton>
+            <UserButton 
+              afterSignOutUrl="/"
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: {
+                    width: 40,
+                    height: 40
+                  }
+                }
+              }}
+            />
           ) : (
             <Link
               href="/sign-in"
