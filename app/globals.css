@@ -45,7 +45,7 @@
     background-color: var(--beige);
     color: var(--foreground);
     transition: all 0.3s;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
   }
 
@@ -61,7 +61,7 @@
     background-color: var(--primary);
     color: var(--background);
     transition: all 0.3s;
-    font-weight: 600;
+    font-weight: 400;
     cursor: pointer;
   }
 

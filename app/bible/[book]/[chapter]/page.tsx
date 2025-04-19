@@ -17,6 +17,11 @@ const ReaderSettings = dynamic(() => import('@/components/ReaderSettings'), {
   loading: () => <div className="fixed bottom-21 left-1/2 -translate-x-1/2 bg-[var(--background)] border border-black-100 rounded-lg shadow-lg z-50 w-[70%] max-w-xs overflow-hidden animate-pulse" />
 });
 
+// Add WordLookup import
+const WordLookup = dynamic(() => import('@/components/WordLookup'), {
+  loading: () => null
+});
+
 // Import the Bible data
 import esvBible from '@/public/bibles/esv_bible.json';
 import tonganBible from '@/public/bibles/tongan_bible.json';
@@ -142,6 +147,10 @@ export default function BiblePage() {
     };
   }, [book, chapter, memoizedProcessVerses, memoizedEsvBible, memoizedTonganBible]);
   
+  // Add state for word lookup
+  const [selectedWord, setSelectedWord] = useState('');
+  const [wordPosition, setWordPosition] = useState<{ x: number; y: number } | null>(null);
+
   if (!esvChapter.length || !tonganChapter.length) {
     return <div className="p-6">Chapter not found</div>;
   }
@@ -227,6 +236,45 @@ export default function BiblePage() {
     },
   });
 
+  // Add word click handler
+  const handleWordClick = (event: React.MouseEvent<HTMLSpanElement>, word: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    // Clean the word by removing punctuation but preserve capitalization
+    const cleanWord = word
+      .replace(/[.,!?;:"'"'"'"'"']/g, '') // Remove quotes
+      .replace(/\u201C|\u201D/g, '') // Remove specific curly quote characters
+      .trim();
+    
+    setSelectedWord(cleanWord);
+    setWordPosition({
+      x: event.clientX,
+      y: event.clientY
+    });
+  };
+
+  // Add close handler
+  const handleCloseWordLookup = () => {
+    setSelectedWord('');
+    setWordPosition(null);
+  };
+
+  // Modify the verse rendering to make words clickable
+  const renderTonganText = (text: string) => {
+    return text.split(' ').map((word, index, array) => (
+      <span key={index}>
+        <span
+          className="cursor-pointer hover:text-[var(--primary)] rounded px-0.5"
+          onClick={(e) => handleWordClick(e, word)}
+        >
+          {word}
+        </span>
+        {index < array.length - 1 ? ' ' : ''}
+      </span>
+    ));
+  };
+
   return (
     <main className="max-w-6xl mx-auto p-6 pb-24">
       <Navbar />
@@ -241,6 +289,13 @@ export default function BiblePage() {
         isOpen={isReaderSettingsOpen}
         onClose={() => setIsReaderSettingsOpen(false)}
         onFontSizeChange={handleFontSizeChange}
+      />
+
+      {/* Add WordLookup component */}
+      <WordLookup
+        word={selectedWord}
+        position={wordPosition}
+        onClose={handleCloseWordLookup}
       />
     
       <div className="flex justify-center items-center mb-8 mt-6">
@@ -282,14 +337,14 @@ export default function BiblePage() {
                     <div>
                       {combinedEnglishVerses.map((englishVerse) => (
                         <div key={`combined-${englishVerse.number}`} className="flex">
-                          <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">{englishVerse.number}</span>
+                          <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">{englishVerse.number}</span>
                           <span className={getFontSizeClass()}>{englishVerse.text}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="flex">
-                      <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">{verse.number}</span>
+                      <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">{verse.number}</span>
                       <span className={getFontSizeClass()}>{verse.text}</span>
                     </div>
                   )}
@@ -298,11 +353,11 @@ export default function BiblePage() {
 
               <div className={isParallel ? 'w-1/2' : 'w-full'}>
                 <div className="flex">
-                  <span className="font-semibold mr-2 min-w-[2rem] text-right shrink-0">
+                  <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">
                     {tonganRangeVerse?.number || tonganVerse?.number || verse.number}
                   </span>
                   <span className={getFontSizeClass()}>
-                    {tonganRangeVerse?.text || tonganVerse?.text || ''}
+                    {renderTonganText(tonganRangeVerse?.text || tonganVerse?.text || '')}
                   </span>
                 </div>
               </div>

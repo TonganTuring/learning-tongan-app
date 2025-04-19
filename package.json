@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@azure/cognitiveservices-translatortext": "^1.0.1",
     "@clerk/nextjs": "^6.16.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
