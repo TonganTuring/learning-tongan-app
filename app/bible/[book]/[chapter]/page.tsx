@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Type } from 'lucide-react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
@@ -56,7 +56,7 @@ function processVerses(verses: Verse[]): ProcessedVerse[] {
       if (currentVerse) {
         processed.push(currentVerse);
       }
-      // Start a new verse
+      // Start a new verse, keeping the original verse number format (including ranges like "14-17")
       currentVerse = {
         number: verse.number,
         text: verse.text,
@@ -221,25 +221,70 @@ export default function BiblePage() {
       
       <div className={`px-4 transition-opacity duration-300 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
         <div className="space-y-4">
-          {esvChapter.map((verse) => {
+          {esvChapter.map((verse, index) => {
+            const currentVerseNum = parseInt(verse.number);
+            
+            // Find if this verse is part of a range in Tongan
+            const tonganRangeVerse = tonganChapter.find(v => {
+              if (!v.number.includes('-')) return false;
+              const [start, end] = v.number.split('-').map(Number);
+              return currentVerseNum >= start && currentVerseNum <= end;
+            });
+
+            // If this verse is in the middle or end of a range, skip it
+            if (tonganRangeVerse && currentVerseNum > parseInt(tonganRangeVerse.number.split('-')[0])) {
+              return null;
+            }
+
+            // Find the regular Tongan verse (non-range)
             const tonganVerse = tonganChapter.find(v => v.number === verse.number);
+
+            // If this is the start of a range, collect all English verses in the range
+            let combinedEnglishVerses = [];
+            if (tonganRangeVerse) {
+              const [start, end] = tonganRangeVerse.number.split('-').map(Number);
+              for (let i = start; i <= end; i++) {
+                const rangeVerse = esvChapter.find(v => parseInt(v.number) === i);
+                if (rangeVerse) {
+                  combinedEnglishVerses.push(rangeVerse);
+                }
+              }
+            }
+
             return (
               <div 
                 key={`verse-${verse.number}`} 
                 className={`${isParallel ? 'flex gap-8' : 'flex'}`}
               >
-                {/* ESV Bible - only show in parallel mode */}
+                {/* ESV Bible - always show in parallel mode */}
                 {isParallel && (
                   <div className="flex-1 flex items-start">
-                    <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
-                    <span className={`flex-1 ${getFontSizeClass()}`}>{verse.text}</span>
+                    {combinedEnglishVerses.length > 0 ? (
+                      <div className="flex-1">
+                        {combinedEnglishVerses.map((englishVerse, i) => (
+                          <div key={`combined-${englishVerse.number}`} className="flex items-start mb-2">
+                            <span className="font-semibold mr-2 min-w-[2rem] text-right">{englishVerse.number}</span>
+                            <span className={`flex-1 ${getFontSizeClass()}`}>{englishVerse.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
+                        <span className={`flex-1 ${getFontSizeClass()}`}>{verse.text}</span>
+                      </>
+                    )}
                   </div>
                 )}
 
                 {/* Tongan Bible */}
                 <div className={`${isParallel ? 'w-1/2' : 'w-full'} flex items-start`}>
-                  <span className="font-semibold mr-2 min-w-[2rem] text-right">{verse.number}</span>
-                  <span className={`flex-1 ${getFontSizeClass()}`}>{tonganVerse?.text || ''}</span>
+                  <span className="font-semibold mr-2 min-w-[2rem] text-right">
+                    {tonganRangeVerse?.number || tonganVerse?.number || verse.number}
+                  </span>
+                  <span className={`flex-1 ${getFontSizeClass()}`}>
+                    {tonganRangeVerse?.text || tonganVerse?.text || ''}
+                  </span>
                 </div>
               </div>
             );

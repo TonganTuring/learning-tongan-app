@@ -8,7 +8,12 @@ type BookSelectorProps = {
 };
 
 const books = {  
-  'New Testament': [
+  'Bible': [
+    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+    '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles',
+    'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms',
+    'Proverbs', 'Ecclesiastes', 'Song of Solomon', 'Isaiah',
     'Matthew', 'Mark', 'Luke', 'John', 'Acts',
     'Romans', '1 Corinthians', '2 Corinthians',
     'Galatians', 'Ephesians', 'Philippians', 'Colossians',
@@ -20,6 +25,11 @@ const books = {
 
 // Map of books to their number of chapters
 const bookChapters: Record<string, number> = {
+  'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
+  'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24,
+  '1 Kings': 22, '2 Kings': 25, '1 Chronicles': 29, '2 Chronicles': 36,
+  'Ezra': 10, 'Nehemiah': 13, 'Esther': 10, 'Job': 42, 'Psalms': 150,
+  'Proverbs': 31, 'Ecclesiastes': 12, 'Song of Solomon': 8, 'Isaiah': 66,
   'Matthew': 28, 'Mark': 16, 'Luke': 24, 'John': 21, 'Acts': 28,
   'Romans': 16, '1 Corinthians': 16, '2 Corinthians': 13,
   'Galatians': 6, 'Ephesians': 6, 'Philippians': 4, 'Colossians': 4,
@@ -30,6 +40,13 @@ const bookChapters: Record<string, number> = {
 
 // Map of books to their URL codes
 const bookCodes: Record<string, string> = {
+  'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM', 'Deuteronomy': 'DEU',
+  'Joshua': 'JOS', 'Judges': 'JDG', 'Ruth': 'RUT', '1 Samuel': '1SA', '2 Samuel': '2SA',
+  '1 Kings': '1KI', '2 Kings': '2KI', '1 Chronicles': '1CH', '2 Chronicles': '2CH',
+  'Ezra': 'EZR', 'Nehemiah': 'NEH', 'Esther': 'EST', 'Job': 'JOB', 'Psalms': 'PSA',
+  'Proverbs': 'PRO', 'Ecclesiastes': 'ECC', 'Song of Solomon': 'SNG', 'Isaiah': 'ISA',
+  'Jeremiah': 'JER', 'Lamentations': 'LAM', 'Ezekiel': 'EZK', 'Daniel': 'DAN',
+  'Hosea': 'HOS', 'Joel': 'JOL', 'Amos': 'AMO', 'Obadiah': 'OBA', 'Jonah': 'JON',
   'Matthew': 'MAT', 'Mark': 'MRK', 'Luke': 'LUK', 'John': 'JHN', 'Acts': 'ACT',
   'Romans': 'ROM', '1 Corinthians': '1CO', '2 Corinthians': '2CO',
   'Galatians': 'GAL', 'Ephesians': 'EPH', 'Philippians': 'PHP', 'Colossians': 'COL',
