@@ -25,7 +25,7 @@ const books = [
 ];
 
 // Map of books to their number of chapters
-const bookChapters: Record<string, number> = {
+export const bookChapters: Record<string, number> = {
   'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
   'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24,
   '1 Kings': 22, '2 Kings': 25, '1 Chronicles': 29, '2 Chronicles': 36,
@@ -43,7 +43,7 @@ const bookChapters: Record<string, number> = {
 };
 
 // Map of books to their URL codes
-const bookCodes: Record<string, string> = {
+export const bookCodes: Record<string, string> = {
   'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM', 'Deuteronomy': 'DEU',
   'Joshua': 'JOS', 'Judges': 'JDG', 'Ruth': 'RUT', '1 Samuel': '1SA', '2 Samuel': '2SA',
   '1 Kings': '1KI', '2 Kings': '2KI', '1 Chronicles': '1CH', '2 Chronicles': '2CH',
@@ -59,6 +59,12 @@ const bookCodes: Record<string, string> = {
   'Titus': 'TIT', 'Philemon': 'PHM', 'Hebrews': 'HEB', 'James': 'JAS', '1 Peter': '1PE',
   '2 Peter': '2PE', '1 John': '1JN', '2 John': '2JN', '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV'
 };
+
+// Create a reverse mapping for code to book name
+export const codeToBook: Record<string, string> = Object.entries(bookCodes).reduce((acc, [book, code]) => {
+  acc[code] = book;
+  return acc;
+}, {} as Record<string, string>);
 
 export default function BookSelector({ isOpen, onClose, onSelectBook, onMouseLeave }: BookSelectorProps) {
   const [filterText, setFilterText] = useState('');

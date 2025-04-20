@@ -341,20 +341,44 @@ export default function BiblePage() {
     setWordPosition(null);
   };
 
+  // Add keyboard navigation handler
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'ArrowLeft' && prevLink) {
+      router.push(prevLink);
+    } else if (event.key === 'ArrowRight' && nextLink) {
+      router.push(nextLink);
+    } else if (event.key.toLowerCase() === 'p') {
+      handleParallelToggle();
+    }
+  }, [prevLink, nextLink, router, handleParallelToggle]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   // Modify the verse rendering to make words clickable
   const renderTonganText = (text: string) => {
     try {
-      window.console.log('Rendering Tongan text:', text);
+      if (typeof window !== 'undefined') {
+        window.console.log('Rendering Tongan text:', text);
+      }
       return text.split(' ').map((word, index, array) => (
         <span key={index}>
           <span
             className="cursor-pointer hover:text-[var(--primary)] rounded px-0.5"
             onClick={(e) => {
               try {
-                window.console.log('Word span clicked:', word);
+                if (typeof window !== 'undefined') {
+                  window.console.log('Word span clicked:', word);
+                }
                 handleWordClick(e, word);
               } catch (error) {
-                window.console.error('Error in word click:', error);
+                if (typeof window !== 'undefined') {
+                  window.console.error('Error in word click:', error);
+                }
               }
             }}
           >
@@ -364,7 +388,9 @@ export default function BiblePage() {
         </span>
       ));
     } catch (error) {
-      window.console.error('Error in renderTonganText:', error);
+      if (typeof window !== 'undefined') {
+        window.console.error('Error in renderTonganText:', error);
+      }
       return null;
     }
   };

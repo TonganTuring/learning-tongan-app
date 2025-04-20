@@ -9,7 +9,7 @@ export default function Navbar() {
 
   return (
     <div className="w-full flex justify-center p-4">
-      <nav className="flex items-center justify-between px-4 py-4 max-w-6xl w-full border border-black/5 bg-white/70 backdrop-blur-md shadow-sm rounded-xl">
+      <nav className="flex items-center justify-between px-4 py-4 max-w-6xl w-full border border-black/5 bg-white backdrop-blur-md shadow-sm rounded-xl">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 hover:text-[var(--primary)] transition-colors">
             <Image
@@ -36,6 +36,12 @@ export default function Navbar() {
               >
                 Edit Flashcards
               </Link>
+              <Link
+                href="/study"
+                className="navbar-link"
+              >
+                Study Tongan
+              </Link>
             </>
           )}
           <Link
@@ -43,12 +49,6 @@ export default function Navbar() {
             className="navbar-link"
           >
             Read Tongan
-          </Link>
-          <Link
-            href="/study"
-            className="navbar-link"
-          >
-            Study Tongan
           </Link>
         </div>
 

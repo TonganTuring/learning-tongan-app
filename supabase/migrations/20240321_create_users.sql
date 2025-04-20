@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   avatar_url TEXT,
   current_book TEXT DEFAULT 'book1',
   current_chapter INTEGER DEFAULT 1,
+  vocab_goal INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW())
 );
