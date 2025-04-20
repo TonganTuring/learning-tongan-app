@@ -4,11 +4,14 @@ console.log('=== BIBLE PAGE LOADED ===');
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useMemo, useCallback, useRef, Suspense, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Type, Columns } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Type, Columns, Bookmark, BookmarkCheck } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
+import { useUser } from '@clerk/nextjs';
+import { getSupabaseClient } from '@/utils/supabase/supabase-client';
+import { useAuth } from '@clerk/nextjs';
 
 // Lazy load components
 const BookSelector = dynamic(() => import('@/components/BookSelector'), {
@@ -68,6 +71,8 @@ type ProcessedVerse = {
 export default function BiblePage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useUser();
+  const { getToken } = useAuth();
   const book = (params.book as string).toUpperCase();
   const chapter = params.chapter as string;
   
@@ -165,6 +170,10 @@ export default function BiblePage() {
   // Add state for word lookup
   const [selectedWord, setSelectedWord] = useState('');
   const [wordPosition, setWordPosition] = useState<{ x: number; y: number } | null>(null);
+
+  // Add state for bookmark status
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Add effect to monitor state changes
   useEffect(() => {
@@ -395,6 +404,36 @@ export default function BiblePage() {
     }
   };
 
+  // Add bookmark handler
+  const handleBookmark = async () => {
+    if (!user) return;
+    
+    try {
+      setIsSaving(true);
+      const token = await getToken({ template: 'supabase' });
+      if (!token) return;
+
+      const supabase = await getSupabaseClient(token);
+      const { error } = await supabase
+        .from('users')
+        .update({
+          current_book: book,
+          current_chapter: parseInt(chapter)
+        })
+        .eq('clerk_id', user.id);
+
+      if (error) throw error;
+      
+      setIsBookmarked(true);
+      // Reset bookmark status after 2 seconds
+      setTimeout(() => setIsBookmarked(false), 2000);
+    } catch (error) {
+      console.error('Error saving bookmark:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <main className="max-w-6xl mx-auto p-6 pb-24">
       <Navbar />
@@ -546,6 +585,26 @@ export default function BiblePage() {
             >
               <Columns className={`w-5 h-5 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
             </button>
+            
+            {user && (
+              <button
+                onClick={handleBookmark}
+                disabled={isSaving}
+                className="p-2 hover:bg-[var(--beige)] rounded-full relative"
+                aria-label="Bookmark this chapter"
+              >
+                {isBookmarked ? (
+                  <BookmarkCheck className="w-5 h-5 text-[var(--primary)]" />
+                ) : (
+                  <Bookmark className="w-5 h-5" />
+                )}
+                {isSaving && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-full">
+                    <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </button>
+            )}
           </div>
           
           <div 

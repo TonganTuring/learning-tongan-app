@@ -31,10 +31,10 @@ export default function Navbar() {
                 Dashboard
               </Link>
               <Link
-                href="/edit"
+                href="/bible/gen/1"
                 className="navbar-link"
               >
-                Edit Flashcards
+                Read Tongan
               </Link>
               <Link
                 href="/study"
@@ -42,14 +42,22 @@ export default function Navbar() {
               >
                 Study Tongan
               </Link>
+              <Link
+                href="/edit"
+                className="navbar-link"
+              >
+                Edit Flashcards
+              </Link>
             </>
           )}
-          <Link
-            href="/bible/gen/1"
-            className="navbar-link"
-          >
-            Read Tongan
-          </Link>
+          {!isSignedIn && (
+            <Link
+              href="/bible/gen/1"
+              className="navbar-link"
+            >
+              Read Tongan
+            </Link>
+          )}
         </div>
 
         <div>

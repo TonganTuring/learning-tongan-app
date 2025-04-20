@@ -140,10 +140,10 @@ export default function Dashboard() {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         
         const dailyProgress = days.map((day, index) => {
-          // Get all cards for this day of the week
+          // Get all cards for this day of the week that are marked as 'good'
           const dayCards = flashcards.filter(card => {
             const cardDate = new Date(card.created_at);
-            return cardDate.getDay() === index;
+            return cardDate.getDay() === index && card.status === 'good';
           });
 
           // If no cards for this day, return empty progress
