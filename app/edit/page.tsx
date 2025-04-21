@@ -140,11 +140,23 @@ export default function EditPage() {
   return (
     <main className="min-h-screen bg-[var(--background)]">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex flex-col mb-8">
-          <div className="flex justify-between items-center">
+      <div className="max-w-6xl mx-auto p-4">
+        <div className="sticky top-[0px] bg-[var(--background)] py-4 px-2 mb-4 z-[1] rounded-b-xl">
+          
+          
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <h1 className="text-4xl font-bold">Edit your flashcards</h1>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-row items-center gap-2">
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search flashcards"
+                  value={searchQuery}
+                  onChange={handleSearch}
+                  className="pl-10 pr-4 py-2 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent w-full"
+                />
+              </div>
               <div className="flex items-center bg-white rounded-lg border border-gray-300 p-1">
                 <button
                   onClick={() => {
@@ -173,20 +185,10 @@ export default function EditPage() {
                   Select
                 </button>
               </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search flashcards"
-                  value={searchQuery}
-                  onChange={handleSearch}
-                  className="pl-10 pr-4 py-2 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
-                />
-              </div>
             </div>
           </div>
           {mode === 'select' && (
-            <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-2 mt-2">
               <span>{selectedFlashcards.length} selected</span>
               <button
                 onClick={() => setSelectedFlashcards(filteredFlashcards.map(card => card.id))}

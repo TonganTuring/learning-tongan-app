@@ -20,6 +20,13 @@ type DictionaryEntry = {
   english: string;
 };
 
+type FlashcardEntry = {
+  tongan_phrase: string;
+  english_phrase: string;
+  status: FlashcardStatus;
+  last_reviewed_at: string | null;
+};
+
 export default function WordLookup({ word, position, onClose }: WordLookupProps) {
   console.log('=== WORDLOOKUP COMPONENT START ===');
   console.log('Initial props:', { word, position });
@@ -33,6 +40,7 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
   const [isEditing, setIsEditing] = useState(false);
   const [editedEnglish, setEditedEnglish] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [hasExistingFlashcard, setHasExistingFlashcard] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
@@ -58,10 +66,41 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
     
     // Clear any existing errors when word changes
     setError(null);
+    setHasExistingFlashcard(false);
     
     const fetchDefinition = async () => {
       try {
-        console.log('Fetching definition for word:', word);
+        setLoading(true);
+        
+        // First check if user has a flashcard for this word
+        if (isSignedIn && user?.id) {
+          console.log('Checking for existing flashcard...');
+          const token = await getToken({ template: 'supabase' });
+          if (token) {
+            const supabase = await getSupabaseClient(token);
+            const { data: flashcard, error: flashcardError } = await supabase
+              .from('flashcards')
+              .select('*')
+              .eq('clerk_user_id', user.id)
+              .eq('tongan_phrase', word)
+              .single();
+
+            if (!flashcardError && flashcard) {
+              console.log('Found existing flashcard:', flashcard);
+              setDefinition({
+                tongan: flashcard.tongan_phrase,
+                english: flashcard.english_phrase
+              });
+              setEditedEnglish(flashcard.english_phrase);
+              setHasExistingFlashcard(true);
+              setLoading(false);
+              return;
+            }
+          }
+        }
+
+        // If no flashcard found, check dictionary
+        console.log('No flashcard found, checking dictionary...');
         const response = await fetch('/api/dictionary?word=' + encodeURIComponent(word));
         console.log('API response status:', response.status);
         if (!response.ok) {
@@ -87,13 +126,12 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
 
     if (word && position) {
       console.log('Word and position available, fetching definition');
-      setLoading(true);
       setIsEditing(false);
       fetchDefinition();
     } else {
       console.log('Word or position missing, skipping fetch');
     }
-  }, [word]);
+  }, [word, isSignedIn, user?.id]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -243,6 +281,9 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
         </div>
       ) : definition ? (
         <div>
+          {hasExistingFlashcard && (
+            <p className="text-xs text-gray-500 mb-2">(already in your flashcards)</p>
+          )}
           {isEditing ? (
             <textarea
               value={editedEnglish}
@@ -270,15 +311,17 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
           <>
             <button 
               className="primary-button flex-1"
-              onClick={handleSaveEdit}
-            >
-              Save
-            </button>
-            <button 
-              className="primary-button flex-1"
               onClick={handleCancelEdit}
             >
               Cancel
+            </button>
+            <button 
+              className="primary-button flex-1"
+              onClick={handleAddFlashcard}
+              disabled={isAddingFlashcard}
+              style={{ opacity: isAddingFlashcard ? 0.5 : 1 }}
+            >
+              {isAddingFlashcard ? 'Saving...' : 'Save'}
             </button>
           </>
         ) : (
@@ -296,7 +339,7 @@ export default function WordLookup({ word, position, onClose }: WordLookupProps)
               disabled={isAddingFlashcard || !definition}
               style={{ opacity: (isAddingFlashcard || !definition) ? 0.5 : 1 }}
             >
-              {isAddingFlashcard ? 'Adding...' : 'Add'}
+              {isAddingFlashcard ? 'Adding...' : hasExistingFlashcard ? 'Update' : 'Add'}
             </button>
           </>
         )}

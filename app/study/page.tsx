@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
@@ -9,8 +9,9 @@ import RatingButton from '@/components/RatingButton';
 import StatusIndicator from '@/components/StatusIndicator';
 import FlashcardSettings from '@/components/FlashcardSettings';
 import { getSupabaseClient } from '@/utils/supabase/supabase-client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Flashcard } from '@/types/database';
+import { useSwipeable } from 'react-swipeable';
 
 export default function StudyPage() {
   const { user } = useUser();
@@ -19,7 +20,7 @@ export default function StudyPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [direction, setDirection] = useState(1); // 1 for right, -1 for left
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const [shuffledOrder, setShuffledOrder] = useState<number[]>([]);
 
   // Settings state
@@ -29,6 +30,11 @@ export default function StudyPage() {
   const [showHidden, setShowHidden] = useState(false);
   const [swapQA, setSwapQA] = useState(false);
   const [showUserTags, setShowUserTags] = useState(false);
+
+  // Add animation state and motion values
+  const [isAnimating, setIsAnimating] = useState(false);
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [-100, 0, 100], [0, 1, 0]);
 
   // Move filteredAndSortedFlashcards declaration before the useEffect
   const filteredAndSortedFlashcards = useMemo(() => {
@@ -144,17 +150,15 @@ export default function StudyPage() {
     };
   }, [filteredAndSortedFlashcards]); // Add filteredAndSortedFlashcards as dependency
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setShowAnswer(false);
-    setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % filteredAndSortedFlashcards.length);
-  };
+  }, [filteredAndSortedFlashcards.length]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     setShowAnswer(false);
-    setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + filteredAndSortedFlashcards.length) % filteredAndSortedFlashcards.length);
-  };
+  }, [filteredAndSortedFlashcards.length]);
 
   const updateFlashcardStatus = async (status: 'good' | 'bad' | 'ok') => {
     if (!user || !filteredAndSortedFlashcards[currentIndex]) return;
@@ -189,6 +193,79 @@ export default function StudyPage() {
     }
   };
 
+  // Modify swipe handlers to include animation
+  const swipeHandlers = useSwipeable({
+    onSwiping: (e) => {
+      if (!isAnimating) {
+        // Only update position if horizontal movement is significantly greater than vertical
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5 && Math.abs(e.deltaX) > 30) {
+          x.set(e.deltaX);
+        } else {
+          x.set(0);
+        }
+      }
+    },
+    onSwipedLeft: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (!isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('left');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(-100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          handleNext();
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 300);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwipedRight: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (!isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('right');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          handlePrevious();
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 300);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwiped: () => {
+      if (!isAnimating) {
+        x.set(0);
+      }
+    },
+    trackMouse: true,
+    trackTouch: true,
+    delta: 30
+  });
+
+  // Add effect to reset animation state when currentIndex changes
+  useEffect(() => {
+    setIsAnimating(false);
+    setDirection(null);
+    x.set(0);
+  }, [currentIndex, x]);
+
   if (loading) {
     return (
       <main className="min-h-screen">
@@ -217,7 +294,7 @@ export default function StudyPage() {
     <main className="h-screen bg-[var(--background)] flex flex-col">
       <Navbar />
       
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4">
+      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4" {...swipeHandlers}>
         {/* Progress bar and settings button */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-4">
@@ -279,7 +356,7 @@ export default function StudyPage() {
               {/* Navigation button - Previous */}
               <button
                 onClick={handlePrevious}
-                className="absolute left-0 lg:-left-20 flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
+                className="absolute left-0 lg:-left-20 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
                 aria-label="Previous Card"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -287,17 +364,14 @@ export default function StudyPage() {
 
               {/* Flashcard Container */}
               <div className="relative w-full overflow-hidden h-full">
-                <AnimatePresence mode="sync" initial={false} custom={direction}>
+                <AnimatePresence mode="wait" initial={false}>
                   <motion.div
-                    key={currentIndex}
-                    custom={direction}
-                    initial={{ x: direction > 0 ? 1000 : -1000, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: direction > 0 ? -1000 : 1000, opacity: 0 }}
-                    transition={{
-                      x: { type: "spring", stiffness: 1000, damping: 50, duration: 0.1 },
-                      opacity: { duration: 0.05 }
-                    }}
+                    key={`${currentIndex}-${filteredAndSortedFlashcards[currentIndex]?.id}`}
+                    style={{ x, opacity }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
                     className="absolute inset-0 bg-white rounded-xl shadow-lg p-8 sm:p-12 flex flex-col items-center justify-center text-center w-full h-full"
                   >
                     <div className="absolute top-4 left-4">
@@ -329,7 +403,7 @@ export default function StudyPage() {
               {/* Navigation button - Next */}
               <button
                 onClick={handleNext}
-                className="absolute right-0 lg:-right-20 flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
+                className="absolute right-0 lg:-right-20 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
                 aria-label="Next Card"
               >
                 <ChevronRight className="w-6 h-6" />

@@ -26,12 +26,12 @@ export default function RatingButton({ type, onClick, currentStatus }: RatingBut
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-3 px-16 py-4 rounded-xl box-border hover:opacity-70 ${colors[type]} ${
+      className={`flex flex-col items-center gap-2 w-24 px-4 py-3 rounded-xl box-border hover:opacity-70 ${colors[type]} ${
         isActive ? `border-2 ${borderColors[type]}` : 'border-0'
       }`}
     >
-      <Image src={`/faces/${type}.svg`} alt={type} width={36} height={36} />
-      <span className="text-lg capitalize">{type}</span>
+      <Image src={`/faces/${type}.svg`} alt={type} width={28} height={28} />
+      <span className="text-base capitalize">{type}</span>
     </button>
   );
 } 

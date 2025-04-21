@@ -89,8 +89,8 @@ export default function ReaderSettings({ isOpen, onClose, onFontSizeChange }: Re
   return (
     <div 
       ref={menuRef}
-      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-white border border-black-100 rounded-lg shadow-lg z-50 w-[70%] max-w-xs overflow-hidden ${
-        isOpen ? 'animate-[slideUp_0.3s_ease-out]' : 'animate-[slideDown_0.2s_ease-in]'
+      className={`fixed bottom-20 left-1/2 -translate-x-1/2 bg-white border border-black-100 rounded-lg shadow-lg z-50 w-[70%] max-w-xs overflow-hidden transition-all ease-out duration-300 ${
+        isOpen ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0 pointer-events-none'
       }`}
     >
       <div className="flex flex-col">

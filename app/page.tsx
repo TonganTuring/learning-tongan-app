@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Navbar from "../components/Navbar";
 import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 function AnimatedText() {
   const [isEnglish, setIsEnglish] = useState(false);
@@ -42,6 +44,17 @@ function AnimatedText() {
 }
 
 export default function Home() {
+  const { isSignedIn } = useUser();
+  const router = useRouter();
+
+  const handleStartLearning = () => {
+    if (isSignedIn) {
+      router.push("/study");
+    } else {
+      router.push("/bible/gen/1");
+    }
+  };
+
   return (
     <main className="min-h-screen flex flex-col">
       <Navbar />
@@ -52,9 +65,9 @@ export default function Home() {
           <p className="sm:text-lg mb-4">
             Learning Tongan is hard — this app makes it easier.
           </p>
-          <Link href="/bible/gen/1" className="primary-button">
+          <button onClick={handleStartLearning} className="primary-button">
             Start learning Tongan
-          </Link>
+          </button>
         </div>
       </div>
     </main>

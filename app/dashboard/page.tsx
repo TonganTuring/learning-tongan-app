@@ -241,29 +241,29 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="h-screen overflow-hidden">
+    <main className="min-h-screen">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-4 h-[calc(100vh-80px)]">
+      <div className="max-w-6xl mx-auto px-4 py-4">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-4xl font-bold flex items-center gap-2">
+          <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-2">
             Malo e lelei {user?.firstName || 'Friend'} 👋
           </h1>
           <p className="text-red-800">Tau ako lea fakatonga</p>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 pb-6">
           {/* Left Column - Stats and Progress */}
-          <div className="w-2/5 space-y-4">
+          <div className="w-full lg:w-2/5 space-y-4">
             {/* Stats Cards Row */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {/* New Words Card */}
               <a 
                 href="/study"
                 className="bg-white rounded-xl p-4 shadow-sm flex-1 aspect-square flex flex-col justify-center items-center transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
               >
-                <div className="text-4xl font-bold mb-1">{stats.newWords}</div>
-                <div className="text-gray-600 text-sm text-center">New Words</div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">{stats.newWords}</div>
+                <div className="text-gray-600 text-xs md:text-sm text-center">New Words</div>
               </a>
 
               {/* Mastered Words Card */}
@@ -271,8 +271,8 @@ export default function Dashboard() {
                 href="/study"
                 className="bg-white rounded-xl p-4 shadow-sm flex-1 aspect-square flex flex-col justify-center items-center transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
               >
-                <div className="text-4xl font-bold mb-1">{stats.masteredWords}</div>
-                <div className="text-gray-600 text-sm text-center">Mastered Words</div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">{stats.masteredWords}</div>
+                <div className="text-gray-600 text-xs md:text-sm text-center">Mastered Words</div>
               </a>
 
               {/* Vocab Goal Card */}
@@ -286,8 +286,8 @@ export default function Dashboard() {
                 <div className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded-full">
                   <PencilIcon className="w-4 h-4 text-gray-500" />
                 </div>
-                <div className="text-4xl font-bold mb-1">{stats.vocabGoal}</div>
-                <div className="text-gray-600 text-sm text-center">Vocab Goal</div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">{stats.vocabGoal}</div>
+                <div className="text-gray-600 text-xs md:text-sm text-center">Vocab Goal</div>
               </div>
             </div>
 
@@ -296,13 +296,13 @@ export default function Dashboard() {
             <div className="space-y-4">
               <a 
                 href="/study"
-                className="block bg-white rounded-xl p-6 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
+                className="block bg-white rounded-xl p-4 md:p-6 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
               >
                 <div className="mb-4">
-                  <div className="text-4xl font-bold text-red-800 mb-2">
+                  <div className="text-3xl md:text-4xl font-bold text-red-800 mb-2">
                     {stats.vocabularyProgress}%
                   </div>
-                  <div className="text-gray-600">Progress in vocabulary</div>
+                  <div className="text-gray-600 text-sm md:text-base">Progress in vocabulary</div>
                 </div>
                 <div className="w-full bg-[#FAF7F2] rounded-full h-2.5">
                   <div 
@@ -315,13 +315,13 @@ export default function Dashboard() {
               {/* Bible Progress Card */}
               <a 
                 href={`/bible/${bookCodes[stats.currentBook]}/${stats.currentChapter}`}
-                className="block bg-white rounded-xl p-6 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
+                className="block bg-white rounded-xl p-4 md:p-6 shadow-sm transition-all duration-300 cursor-pointer hover:shadow-lg hover:scale-[1.02]"
               >
                 <div className="mb-4">
-                  <div className="text-4xl font-bold text-red-800 mb-2">
+                  <div className="text-3xl md:text-4xl font-bold text-red-800 mb-2">
                     {stats.readingProgress}%
                   </div>
-                  <div className="text-gray-600">
+                  <div className="text-gray-600 text-sm md:text-base">
                     Progress in {stats.currentBook}
                   </div>
                 </div>
@@ -336,13 +336,13 @@ export default function Dashboard() {
           </div>
 
           {/* Right Column - Progress Chart */}
-          <div className="w-3/5 bg-white rounded-xl p-6 shadow-sm">
-            <h2 className="text-2xl font-bold mb-6">Daily Word Count</h2>
-            <div className="w-full h-[350px]">
+          <div className="w-full lg:w-3/5 bg-white rounded-xl p-4 md:p-6 shadow-sm">
+            <h2 className="text-xl md:text-2xl font-bold mb-6">Daily Word Count</h2>
+            <div className="w-full h-[250px] md:h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={stats.dailyProgress}
-                  margin={{ top: 20, right: 20, left: 20, bottom: 0 }}
+                  margin={{ top: 20, right: 20, left: 25, bottom: 0 }}
                 >
                   <defs>
                     <linearGradient id="colorWords" x1="0" y1="0" x2="0" y2="1">

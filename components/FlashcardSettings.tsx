@@ -1,10 +1,12 @@
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import StatusIndicator from './StatusIndicator';
 import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 
 type SortOption = 'newest' | 'oldest' | 'random';
-type StatusFilter = ('good' | 'ok' | 'bad' | 'none')[];
+type StatusType = 'none' | 'bad' | 'ok' | 'good';
+type StatusFilter = StatusType[];
 
 type FlashcardSettingsProps = {
   isOpen: boolean;
@@ -22,18 +24,15 @@ export default function FlashcardSettings({
   onClose,
   onSortChange,
   onStatusFilterChange,
-  onSwapQAChange,
   currentSort,
   currentStatusFilter,
   swapQA,
+  onSwapQAChange,
 }: FlashcardSettingsProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const sortDropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => {
     if (isOpen) {
@@ -61,54 +60,12 @@ export default function FlashcardSettings({
     };
   }, [isOpen, onClose]);
 
-  const statusOptions = [
-    { value: 'bad', label: 'Bad' },
-    { value: 'ok', label: 'OK' },
-    { value: 'good', label: 'Good' },
-    { value: 'none', label: 'Unrated' },
-  ];
-
-  const toggleStatus = (status: 'good' | 'ok' | 'bad' | 'none') => {
+  const toggleStatus = (status: StatusType) => {
     const newFilter = currentStatusFilter.includes(status)
       ? currentStatusFilter.filter(s => s !== status)
       : [...currentStatusFilter, status];
     onStatusFilterChange(newFilter.length ? newFilter : ['good', 'ok', 'bad', 'none']);
   };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsStatusDropdownOpen(false);
-      }
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
-        setIsSortDropdownOpen(false);
-      }
-    };
-
-    if (isStatusDropdownOpen || isSortDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isStatusDropdownOpen, isSortDropdownOpen]);
-
-  useEffect(() => {
-    if (isStatusDropdownOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom,
-        left: rect.left,
-        width: rect.width
-      });
-    }
-  }, [isStatusDropdownOpen]);
-
-  const sortOptions = [
-    { value: 'newest', label: 'Newest first' },
-    { value: 'oldest', label: 'Oldest first' },
-    { value: 'random', label: 'Random' },
-  ];
 
   if (!isVisible) return null;
 
@@ -116,7 +73,7 @@ export default function FlashcardSettings({
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
       <div 
         ref={menuRef}
-        className={`bg-white border border-black/10 rounded-lg shadow-lg z-50 w-[80%] max-w-sm overflow-visible ${
+        className={`bg-white border border-black/10 rounded-lg shadow-lg z-50 w-[90%] sm:w-[80%] max-w-sm overflow-visible ${
           isOpen ? 'animate-[slideUp_0.3s_ease-out]' : 'animate-[slideDown_0.3s_ease-out]'
         }`}
       >
@@ -133,55 +90,28 @@ export default function FlashcardSettings({
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
-            {/* Sort options */}
-            <div className="space-y-2" ref={sortDropdownRef}>
+          <div className="p-4 space-y-6">
+            <div className="space-y-2">
               <label className="block text-sm font-medium">
                 Sort by
               </label>
-              <div className="relative">
-                <button
-                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent flex justify-between items-center"
-                >
-                  <span>{sortOptions.find(opt => opt.value === currentSort)?.label}</span>
-                  <ChevronDown className={`w-5 h-5 transition-transform ${isSortDropdownOpen ? 'transform rotate-180' : ''}`} />
-                </button>
-                
-                {isSortDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                    {sortOptions.map((option) => (
-                      <div
-                        key={option.value}
-                        className={`flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer border-l-[3px] transition-all duration-200 ${
-                          currentSort === option.value
-                            ? 'bg-[var(--primary)]/5 border-l-[var(--primary)]'
-                            : 'border-l-transparent'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSortChange(option.value as SortOption);
-                          setIsSortDropdownOpen(false);
-                        }}
-                      >
-                        <span className="text-gray-900">{option.label}</span>
-                        <input
-                          type="radio"
-                          checked={currentSort === option.value}
-                          onChange={() => {}}
-                          className="h-4 w-4 rounded-full border-2 border-gray-300 text-[var(--primary)] 
-                          focus:ring-[var(--primary)] focus:ring-offset-0 focus:ring-2 
-                          checked:bg-[var(--primary)] checked:border-[var(--primary)]
-                          transition-colors duration-200 cursor-pointer accent-[var(--primary)]"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {(['random', 'newest', 'oldest'] as const).map((sort) => (
+                  <button
+                    key={sort}
+                    onClick={() => onSortChange(sort)}
+                    className={`px-3 py-2 rounded-lg text-sm ${
+                      currentSort === sort
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                    }`}
+                  >
+                    {sort.charAt(0).toUpperCase() + sort.slice(1)}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Status filter */}
             <div className="space-y-2" ref={dropdownRef}>
               <label className="block text-sm font-medium">
                 Rating
@@ -197,53 +127,48 @@ export default function FlashcardSettings({
                 
                 {isStatusDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[300px] overflow-y-auto">
-                    {statusOptions.map((option) => (
-                      <div
-                        key={option.value}
-                        className={`flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer border-l-[3px] transition-all duration-200 ${
-                          currentStatusFilter.includes(option.value as any)
-                            ? 'bg-[var(--primary)]/5 border-l-[var(--primary)]'
-                            : 'border-l-transparent'
+                    {(['none', 'bad', 'ok', 'good'] as const).map((status) => (
+                      <motion.button
+                        key={status}
+                        onClick={() => toggleStatus(status)}
+                        className={`w-full px-4 py-2 text-left flex items-center gap-2 ${
+                          currentStatusFilter.includes(status) ? 'bg-gray-100/50' : ''
                         }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleStatus(option.value as any);
+                        whileHover={{
+                          y: -2,
+                          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+                          transition: { duration: 0.2 }
                         }}
+                        whileTap={{ y: 0 }}
                       >
-                        <div className="flex items-center gap-2">
-                          <StatusIndicator status={option.value as any} size="sm" />
-                          <span className="text-gray-900">{option.label}</span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={currentStatusFilter.includes(option.value as any)}
-                          onChange={() => {}}
-                          className="h-4 w-4 rounded-md border-2 border-gray-300 text-[var(--primary)] 
-                          focus:ring-[var(--primary)] focus:ring-offset-0 focus:ring-2 
-                          checked:bg-[var(--primary)] checked:border-[var(--primary)]
-                          transition-colors duration-200 cursor-pointer accent-[var(--primary)]"
-                        />
-                      </div>
+                        <StatusIndicator status={status} size="sm" />
+                        <span className="flex-1">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                        {currentStatusFilter.includes(status) && (
+                          <Check className="w-4 h-4 text-[var(--primary)]" />
+                        )}
+                      </motion.button>
                     ))}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Additional options */}
-            <div className="space-y-3">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={swapQA}
-                  onChange={(e) => onSwapQAChange(e.target.checked)}
-                  className="h-4 w-4 rounded-md border-2 border-gray-300 text-[var(--primary)] 
-                  focus:ring-[var(--primary)] focus:ring-offset-0 focus:ring-2 
-                  checked:bg-[var(--primary)] checked:border-[var(--primary)]
-                  transition-colors duration-200 cursor-pointer accent-[var(--primary)]"
-                />
-                <span className="text-sm">Swap question and answer</span>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                Swap Q&A
               </label>
+              <button
+                onClick={() => onSwapQAChange(!swapQA)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  swapQA ? 'bg-[var(--primary)]' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    swapQA ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 

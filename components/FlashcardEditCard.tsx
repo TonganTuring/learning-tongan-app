@@ -2,6 +2,8 @@ import { Flashcard } from '@/types/database';
 import StatusIndicator from '@/components/StatusIndicator';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Trash2, Check } from 'lucide-react';
+import { useSwipeable } from 'react-swipeable';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 
 interface FlashcardEditCardProps {
   card: Flashcard;
@@ -17,6 +19,12 @@ export default function FlashcardEditCard({ card, isSelected, onSelect, onEdit, 
   const [isEditing, setIsEditing] = useState(false);
   const [currentCard, setCurrentCard] = useState(card);
   const [editValues, setEditValues] = useState({ tongan_phrase: card.tongan_phrase, english_phrase: card.english_phrase });
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [-100, 0, 100], [0, 1, 0]);
 
   const currentIndex = allCards.findIndex(c => c.id === currentCard.id);
 
@@ -29,6 +37,7 @@ export default function FlashcardEditCard({ card, isSelected, onSelect, onEdit, 
       english_phrase: nextCard.english_phrase
     });
     onSelect(nextCard.id);
+    setIsSaved(false);
   };
 
   const handlePrevious = () => {
@@ -40,12 +49,89 @@ export default function FlashcardEditCard({ card, isSelected, onSelect, onEdit, 
       english_phrase: prevCard.english_phrase
     });
     onSelect(prevCard.id);
+    setIsSaved(false);
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     await onEdit(currentCard.id, editValues);
-    setIsEditing(false);
+    setIsSaving(false);
+    setIsSaved(true);
+    // Reset the saved state after 0.8 seconds
+    setTimeout(() => setIsSaved(false), 800);
   };
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: (e) => {
+      if (!isAnimating) {
+        // Only update position if horizontal movement is significantly greater than vertical
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5 && Math.abs(e.deltaX) > 30) {
+          x.set(e.deltaX);
+        } else {
+          x.set(0);
+        }
+      }
+    },
+    onSwipedLeft: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (!isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('left');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(-100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          handleNext();
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 300);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwipedRight: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (!isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('right');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          handlePrevious();
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 300);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwiped: () => {
+      if (!isAnimating) {
+        x.set(0);
+      }
+    },
+    trackMouse: true,
+    trackTouch: true,
+    delta: 30
+  });
+
+  // Add effect to reset animation state when currentIndex changes
+  useEffect(() => {
+    setIsAnimating(false);
+    setDirection(null);
+    x.set(0);
+  }, [currentIndex, x]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -134,9 +220,15 @@ export default function FlashcardEditCard({ card, isSelected, onSelect, onEdit, 
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
           onClick={() => setIsEditing(false)}
         >
-          <div 
+          <motion.div 
             className="bg-white rounded-2xl w-full max-w-xl mx-4"
             onClick={(e) => e.stopPropagation()}
+            {...swipeHandlers}
+            style={{ x, opacity }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
             {/* Header */}
             
@@ -209,12 +301,21 @@ export default function FlashcardEditCard({ card, isSelected, onSelect, onEdit, 
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-[#8B0000] rounded-lg hover:bg-[#8B0000]/90"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#8B0000] rounded-lg hover:bg-[#8B0000]/90 flex items-center gap-2 min-w-[120px] justify-center"
               >
-                Save Changes
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : isSaved ? (
+                  'Saved'
+                ) : (
+                  'Save Changes'
+                )}
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </>

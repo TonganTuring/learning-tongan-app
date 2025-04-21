@@ -118,8 +118,8 @@ export default function BookSelector({ isOpen, onClose, onSelectBook, onMouseLea
     <div 
       ref={menuRef}
       onMouseLeave={onMouseLeave}
-      className={`fixed bottom-21 left-1/2 -translate-x-1/2 bg-white border border-black-100 rounded-lg shadow-lg z-50 w-[80%] max-w-sm h-[50vh] overflow-hidden ${
-        isOpen ? 'animate-[slideUp_0.3s_ease-out]' : 'animate-[slideDown_0.3s_ease-out]'
+      className={`fixed bottom-20 left-1/2 -translate-x-1/2 bg-white border border-black-100 rounded-lg shadow-lg z-50 w-[90%] sm:w-[80%] max-w-sm h-[60vh] sm:h-[50vh] overflow-hidden transition-all ease-out duration-300 ${
+        isOpen ? 'translate-y-0 opacity-100' : 'translate-y-[120%] opacity-0 pointer-events-none'
       }`}
     >
       <div className="h-full flex flex-col">
@@ -140,48 +140,42 @@ export default function BookSelector({ isOpen, onClose, onSelectBook, onMouseLea
             <X className="w-5 h-5" />
           </button>
         </div>
-        
-        <div className="flex-1 overflow-hidden">
+
+        <div className="px-3 pb-2">
+          <input
+            type="text"
+            placeholder={selectedBook ? "Search chapters..." : "Search books..."}
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent"
+          />
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-3 pb-3">
           {selectedBook ? (
-            <div className="h-full overflow-y-auto p-3">
-              <div className="grid grid-cols-5 gap-3">
-                {Array.from({ length: bookChapters[selectedBook] }, (_, i) => i + 1).map(chapter => (
-                  <button
-                    key={chapter}
-                    onClick={() => handleChapterSelect(chapter)}
-                    className="w-12 h-12 flex items-center justify-center rounded-md text-sm font-medium bg-[var(--beige)] hover:text-[var(--background)] hover:bg-[var(--primary)] transition-colors duration-200"
-                  >
-                    {chapter}
-                  </button>
-                ))}
-              </div>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+              {Array.from({ length: bookChapters[selectedBook] }, (_, i) => i + 1).map(chapter => (
+                <button
+                  key={chapter}
+                  onClick={() => handleChapterSelect(chapter)}
+                  className="p-2 text-center rounded-lg hover:bg-[var(--beige)]"
+                >
+                  {chapter}
+                </button>
+              ))}
             </div>
           ) : (
-            <>
-              <div className="p-2 pt-1 border-b">
-                <input
-                  type="text"
-                  placeholder="Filter books..."
-                  className="w-full px-2 py-1 border rounded-md text-sm"
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                />
-              </div>
-              
-              <div className="h-[calc(100%-3rem)] overflow-y-auto p-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {filteredBooks.map(book => (
-                    <button
-                      key={book}
-                      onClick={() => setSelectedBook(book)}
-                      className="text-left px-3 py-1.5 hover:bg-[var(--beige)] rounded-md text-sm"
-                    >
-                      {book}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
+            <div className="grid grid-cols-2 gap-2">
+              {filteredBooks.map((book) => (
+                <button
+                  key={book}
+                  onClick={() => setSelectedBook(book)}
+                  className="p-2 text-left rounded-lg hover:bg-[var(--beige)]"
+                >
+                  {book}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>

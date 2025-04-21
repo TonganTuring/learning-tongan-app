@@ -12,6 +12,8 @@ import { useVirtualizer, VirtualItem } from '@tanstack/react-virtual';
 import { useUser } from '@clerk/nextjs';
 import { getSupabaseClient } from '@/utils/supabase/supabase-client';
 import { useAuth } from '@clerk/nextjs';
+import { useSwipeable } from 'react-swipeable';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 // Lazy load components
 const BookSelector = dynamic(() => import('@/components/BookSelector'), {
@@ -174,6 +176,46 @@ export default function BiblePage() {
   // Add state for bookmark status
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [currentVerse, setCurrentVerse] = useState<number | null>(null);
+  const [currentBook, setCurrentBook] = useState<string | null>(null);
+  const [currentChapter, setCurrentChapter] = useState<number | null>(null);
+
+  // Add animation state and motion values
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
+  const x = useMotionValue(0);
+  const opacity = useTransform(x, [-100, 0, 100], [0, 1, 0]);
+
+  // Add effect to load current verse on mount
+  useEffect(() => {
+    const loadCurrentVerse = async () => {
+      if (!user) return;
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (!token) return;
+
+        const supabase = await getSupabaseClient(token);
+        const { data, error } = await supabase
+          .from('users')
+          .select('current_verse, current_book, current_chapter')
+          .eq('clerk_id', user.id)
+          .single();
+
+        if (error) throw error;
+        
+        if (data) {
+          setCurrentVerse(data.current_verse);
+          setCurrentBook(data.current_book);
+          setCurrentChapter(data.current_chapter);
+        }
+      } catch (error) {
+        console.error('Error loading current verse:', error);
+      }
+    };
+
+    loadCurrentVerse();
+  }, [user, getToken]);
 
   // Add effect to monitor state changes
   useEffect(() => {
@@ -356,10 +398,8 @@ export default function BiblePage() {
       router.push(prevLink);
     } else if (event.key === 'ArrowRight' && nextLink) {
       router.push(nextLink);
-    } else if (event.key.toLowerCase() === 'p') {
-      handleParallelToggle();
     }
-  }, [prevLink, nextLink, router, handleParallelToggle]);
+  }, [prevLink, nextLink, router]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -367,6 +407,53 @@ export default function BiblePage() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  // Add verse click handler
+  const handleVerseClick = async (verseNumber: number) => {
+    if (!user) return;
+    
+    try {
+      const token = await getToken({ template: 'supabase' });
+      if (!token) return;
+
+      const supabase = await getSupabaseClient(token);
+      const { error } = await supabase
+        .from('users')
+        .update({
+          current_verse: verseNumber,
+          current_book: book,
+          current_chapter: parseInt(chapter)
+        })
+        .eq('clerk_id', user.id);
+
+      if (error) throw error;
+      
+      setCurrentVerse(verseNumber);
+      setCurrentBook(book);
+      setCurrentChapter(parseInt(chapter));
+    } catch (error) {
+      console.error('Error saving current verse:', error);
+    }
+  };
+
+  // Modify the verse rendering to make verse numbers clickable and highlight current verse
+  const renderVerseNumber = (number: string, isTongan: boolean = false) => {
+    const verseNum = parseInt(number);
+    const isCurrentVerse = currentVerse === verseNum;
+    
+    return (
+      <span 
+        className={`font-semibold text-xs mr-1 min-w-[2rem] text-right shrink-0 ${
+          user ? 'cursor-pointer hover:text-[var(--primary)]' : ''
+        } ${
+          isCurrentVerse ? 'text-[var(--primary)] font-bold text-sm' : 'opacity-70'
+        }`}
+        onClick={user ? () => handleVerseClick(verseNum) : undefined}
+      >
+        {number}
+      </span>
+    );
+  };
 
   // Modify the verse rendering to make words clickable
   const renderTonganText = (text: string) => {
@@ -434,192 +521,296 @@ export default function BiblePage() {
     }
   };
 
+  // Modify swipe handlers to include animation
+  const swipeHandlers = useSwipeable({
+    onSwiping: (e) => {
+      if (!isAnimating) {
+        // Only update position if horizontal movement is significantly greater than vertical
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5 && Math.abs(e.deltaX) > 30) {
+          x.set(e.deltaX);
+        } else {
+          x.set(0);
+        }
+      }
+    },
+    onSwipedLeft: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (nextLink && !isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('left');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(-100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          router.push(nextLink);
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 100);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwipedRight: (e) => {
+      // Only trigger if horizontal movement is significantly greater than vertical
+      if (prevLink && !isAnimating && Math.abs(e.deltaX) > 100 && Math.abs(e.deltaX) > Math.abs(e.deltaY) * 1.5) {
+        setDirection('right');
+        setIsAnimating(true);
+        // Immediately start the exit animation
+        x.set(100);
+        // Navigate after a short delay to ensure the exit animation is visible
+        setTimeout(() => {
+          router.push(prevLink);
+          // Reset animation state after navigation
+          setTimeout(() => {
+            setIsAnimating(false);
+            setDirection(null);
+            x.set(0);
+          }, 100);
+        }, 200);
+      } else {
+        // Reset position if swipe wasn't intentional
+        x.set(0);
+      }
+    },
+    onSwiped: () => {
+      if (!isAnimating) {
+        x.set(0);
+      }
+    },
+    trackMouse: true,
+    trackTouch: true,
+    delta: 30 // Increased minimum distance before swipe is registered
+  });
+
   return (
-    <main className="max-w-6xl mx-auto p-6 pb-24">
+    <main className="min-h-screen flex flex-col">
       <Navbar />
       
-      <div 
-        className="relative"
-        onMouseEnter={() => handleBookSelectorHover(true)}
-        onMouseLeave={() => handleBookSelectorHover(false)}
-      >
-        <BookSelector
-          isOpen={isBookSelectorOpen}
-          onClose={() => setIsBookSelectorOpen(false)}
-          onSelectBook={handleBookSelect}
-        />
-      </div>
-
-      <div 
-        className="relative"
-        onMouseEnter={() => handleReaderSettingsHover(true)}
-        onMouseLeave={() => handleReaderSettingsHover(false)}
-      >
-        <ReaderSettings
-          isOpen={isReaderSettingsOpen}
-          onClose={() => setIsReaderSettingsOpen(false)}
-          onFontSizeChange={handleFontSizeChange}
-        />
-      </div>
-
-      {/* Add WordLookup component */}
-      <WordLookup
-        word={selectedWord}
-        position={wordPosition}
-        onClose={handleCloseWordLookup}
-      />
-    
-      <div className="flex justify-center items-center mb-8 mt-6">
-        <h1 className="text-4xl font-bold text-center">
-          {memoizedTonganBible[book]?.name} {chapter}
-        </h1>
-      </div>
-      
-      <div className="px-4">
-        {esvChapter.map((verse, index) => {
-          const tonganVerse = tonganChapter.find(v => v.number === verse.number);
-          const tonganRangeVerse = tonganChapter.find(v => {
-            if (!v.number.includes('-')) return false;
-            const [start, end] = v.number.split('-').map(Number);
-            return parseInt(verse.number) >= start && parseInt(verse.number) <= end;
-          });
-
-          const currentVerseNum = parseInt(verse.number);
-          if (tonganRangeVerse && currentVerseNum > parseInt(tonganRangeVerse.number.split('-')[0])) {
-            return null;
-          }
-
-          let combinedEnglishVerses = [];
-          if (tonganRangeVerse) {
-            const [start, end] = tonganRangeVerse.number.split('-').map(Number);
-            for (let i = start; i <= end; i++) {
-              const rangeVerse = esvChapter.find(v => parseInt(v.number) === i);
-              if (rangeVerse) {
-                combinedEnglishVerses.push(rangeVerse);
-              }
-            }
-          }
-
-          return (
-            <div key={verse.number} className="flex mb-4">
-              {isParallel && (
-                <div className="flex-1 pr-4">
-                  {combinedEnglishVerses.length > 0 ? (
-                    <div>
-                      {combinedEnglishVerses.map((englishVerse) => (
-                        <div key={`combined-${englishVerse.number}`} className="flex">
-                          <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">{englishVerse.number}</span>
-                          <span className={getFontSizeClass()}>{englishVerse.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex">
-                      <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">{verse.number}</span>
-                      <span className={getFontSizeClass()}>{verse.text}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className={isParallel ? 'w-1/2' : 'w-full'}>
-                <div className="flex">
-                  <span className="font-semibold text-xs opacity-70 mr-1 min-w-[2rem] text-right shrink-0">
-                    {tonganRangeVerse?.number || tonganVerse?.number || verse.number}
-                  </span>
-                  <span className={getFontSizeClass()}>
-                    {renderTonganText(tonganRangeVerse?.text || tonganVerse?.text || '')}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      
-      <div className="fixed inset-y-0 left-0 right-0 pointer-events-none flex items-center justify-between px-4">
-        <div className="flex-1">
-          {prevLink && (
-            <Link
-              href={prevLink}
-              className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
-              aria-label="Previous Chapter"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </Link>
-          )}
-        </div>
-        <div className="flex-1 flex justify-end">
-          {nextLink && (
-            <Link
-              href={nextLink}
-              className="pointer-events-auto flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
-              aria-label="Next Chapter"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </Link>
-          )}
-        </div>
-      </div>
-
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white rounded-xl shadow-xl px-4 py-2 border border-black-100">
-        <div 
-          className="relative"
-          onMouseEnter={() => handleBookSelectorHover(true)}
-          onMouseLeave={() => handleBookSelectorHover(false)}
-        >
-          <button
-            className="font-semibold p-3 rounded-full cursor-pointer"
-            onClick={() => setIsBookSelectorOpen(true)}
+      <div className="max-w-6xl mx-auto p-0 sm:p-6 pb-24 flex-1 w-full" {...swipeHandlers}>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${book}-${chapter}`}
+            style={{ x, opacity }}
+            initial={{ 
+              x: direction === 'left' ? -100 : direction === 'right' ? 100 : 0,
+              opacity: 0 
+            }}
+            animate={{ 
+              x: 0,
+              opacity: 1 
+            }}
+            exit={{ 
+              x: direction === 'left' ? 100 : direction === 'right' ? -100 : 0,
+              opacity: 0 
+            }}
+            transition={{ 
+              type: "spring",
+              stiffness: 300,
+              damping: 30,
+              duration: 0.2
+            }}
+            className="relative"
           >
-            {memoizedEsvBible[book]?.name} {chapter}
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4 px-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleParallelToggle}
-              className="p-2 hover:bg-[var(--beige)] rounded-full"
-              aria-label={isParallel ? "Switch to single column" : "Switch to parallel columns"}
+            <div 
+              className="relative"
+              onMouseEnter={() => handleBookSelectorHover(true)}
+              onMouseLeave={() => handleBookSelectorHover(false)}
             >
-              <Columns className={`w-5 h-5 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
-            </button>
+              <BookSelector
+                isOpen={isBookSelectorOpen}
+                onClose={() => setIsBookSelectorOpen(false)}
+                onSelectBook={handleBookSelect}
+              />
+            </div>
+
+            <div 
+              className="relative"
+              onMouseEnter={() => handleReaderSettingsHover(true)}
+              onMouseLeave={() => handleReaderSettingsHover(false)}
+            >
+              <ReaderSettings
+                isOpen={isReaderSettingsOpen}
+                onClose={() => setIsReaderSettingsOpen(false)}
+                onFontSizeChange={handleFontSizeChange}
+              />
+            </div>
+
+            <WordLookup
+              word={selectedWord}
+              position={wordPosition}
+              onClose={handleCloseWordLookup}
+            />
+          
+            <div className="flex justify-center items-center mb-6 mt-4">
+              <h1 className="text-2xl sm:text-4xl font-bold text-center">
+                {memoizedTonganBible[book]?.name} {chapter}
+              </h1>
+            </div>
             
-            {user && (
-              <button
-                onClick={handleBookmark}
-                disabled={isSaving}
-                className="p-2 hover:bg-[var(--beige)] rounded-full relative"
-                aria-label="Bookmark this chapter"
-              >
-                {isBookmarked ? (
-                  <BookmarkCheck className="w-5 h-5 text-[var(--primary)]" />
-                ) : (
-                  <Bookmark className="w-5 h-5" />
-                )}
-                {isSaving && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-full">
-                    <div className="w-4 h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+            <div className="px-0 sm:px-4">
+              {esvChapter.map((verse, index) => {
+                const tonganVerse = tonganChapter.find(v => v.number === verse.number);
+                const tonganRangeVerse = tonganChapter.find(v => {
+                  if (!v.number.includes('-')) return false;
+                  const [start, end] = v.number.split('-').map(Number);
+                  return parseInt(verse.number) >= start && parseInt(verse.number) <= end;
+                });
+
+                const currentVerseNum = parseInt(verse.number);
+                if (tonganRangeVerse && currentVerseNum > parseInt(tonganRangeVerse.number.split('-')[0])) {
+                  return null;
+                }
+
+                let combinedEnglishVerses = [];
+                if (tonganRangeVerse) {
+                  const [start, end] = tonganRangeVerse.number.split('-').map(Number);
+                  for (let i = start; i <= end; i++) {
+                    const rangeVerse = esvChapter.find(v => parseInt(v.number) === i);
+                    if (rangeVerse) {
+                      combinedEnglishVerses.push(rangeVerse);
+                    }
+                  }
+                }
+
+                const isCurrentVerse = currentVerse === currentVerseNum && 
+                                     book === currentBook && 
+                                     parseInt(chapter) === currentChapter;
+
+                return (
+                  <div 
+                    key={verse.number} 
+                    className={`flex flex-row mb-4 rounded-lg transition-all duration-200 gap-1 sm:gap-4 ${
+                      isCurrentVerse ? 'bg-white p-3 sm:p-4 -mx-2 sm:-mx-4 border border-[var(--primary)]/20 shadow-sm' : ''
+                    }`}
+                  >
+                    {isParallel && (
+                      <div className="flex-1 pr-1 sm:pr-4 min-w-[45%] -mx-1 sm:mx-0">
+                        {combinedEnglishVerses.length > 0 ? (
+                          <div>
+                            {combinedEnglishVerses.map((englishVerse) => (
+                              <div key={`combined-${englishVerse.number}`} className="flex">
+                                {renderVerseNumber(englishVerse.number)}
+                                <span className={`${getFontSizeClass()} ${isCurrentVerse ? 'font-medium' : ''}`}>
+                                  {englishVerse.text}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex">
+                            {renderVerseNumber(verse.number)}
+                            <span className={`${getFontSizeClass()} ${isCurrentVerse ? 'font-medium' : ''}`}>
+                              {verse.text}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className={isParallel ? 'flex-1 min-w-[45%] -ml-1 sm:ml-0' : 'w-full'}>
+                      <div className="flex pr-4 sm:pr-0">
+                        {renderVerseNumber(tonganRangeVerse?.number || tonganVerse?.number || verse.number, true)}
+                        <span className={`${getFontSizeClass()} ${isCurrentVerse ? 'font-medium' : ''}`}>
+                          {renderTonganText(tonganRangeVerse?.text || tonganVerse?.text || '')}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </AnimatePresence>
+        
+        <div className="fixed inset-y-0 left-0 right-0 pointer-events-none flex items-center justify-between px-2 sm:px-4">
+          <div className="flex-1">
+            {prevLink && (
+              <Link
+                href={prevLink}
+                className="pointer-events-auto hidden sm:flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
+                aria-label="Previous Chapter"
+              >
+                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              </Link>
             )}
           </div>
-          
+          <div className="flex-1 flex justify-end">
+            {nextLink && (
+              <Link
+                href={nextLink}
+                className="pointer-events-auto hidden sm:flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50"
+                aria-label="Next Chapter"
+              >
+                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-4 bg-white rounded-xl shadow-xl px-4 sm:px-6 py-2 border border-black-100 min-w-[280px]">
           <div 
             className="relative"
-            onMouseEnter={() => handleReaderSettingsHover(true)}
-            onMouseLeave={() => handleReaderSettingsHover(false)}
+            onMouseEnter={() => handleBookSelectorHover(true)}
+            onMouseLeave={() => handleBookSelectorHover(false)}
           >
             <button
-              className="p-2 hover:bg-[var(--beige)] rounded-full"
-              aria-label="Text Settings"
+              className="font-semibold p-2 sm:p-3 rounded-full cursor-pointer text-sm sm:text-base whitespace-nowrap"
+              onClick={() => setIsBookSelectorOpen(true)}
             >
-              <Type className="w-5 h-5" />
+              {memoizedEsvBible[book]?.name} {chapter}
             </button>
           </div>
-        </div>        
+
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleParallelToggle}
+                className="p-2 hover:bg-[var(--beige)] rounded-full"
+                aria-label={isParallel ? "Switch to single column" : "Switch to parallel columns"}
+              >
+                <Columns className={`w-4 h-4 sm:w-5 sm:h-5 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
+              </button>
+              
+              {user && (
+                <button
+                  onClick={handleBookmark}
+                  disabled={isSaving}
+                  className="p-2 hover:bg-[var(--beige)] rounded-full relative"
+                  aria-label="Bookmark this chapter"
+                >
+                  {isBookmarked ? (
+                    <BookmarkCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                  ) : (
+                    <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                  {isSaving && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-full">
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
+                </button>
+              )}
+            </div>
+            
+            <div 
+              className="relative"
+              onMouseEnter={() => handleReaderSettingsHover(true)}
+              onMouseLeave={() => handleReaderSettingsHover(false)}
+            >
+              <button
+                className="p-2 hover:bg-[var(--beige)] rounded-full"
+                aria-label="Text Settings"
+              >
+                <Type className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+          </div>        
+        </div>
       </div>
     </main>
   );
