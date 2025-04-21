@@ -291,13 +291,13 @@ export default function StudyPage() {
   const currentCard = filteredAndSortedFlashcards[currentIndex];
 
   return (
-    <main className="h-screen bg-[var(--background)] flex flex-col">
+    <main className="fixed inset-0 bg-[var(--background)] flex flex-col">
       <Navbar />
       
-      <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4" {...swipeHandlers}>
+      <div className="flex flex-col flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-2" {...swipeHandlers}>
         {/* Progress bar and settings button */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden mr-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-4">
             <div className="flex h-full">
               <div 
                 className="bg-green-500/70 h-full transition-all"
@@ -327,16 +327,16 @@ export default function StudyPage() {
           </div>
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-full hover:bg-[var(--beige)]"
+            className="p-1.5 rounded-full hover:bg-[var(--beige)]"
             aria-label="Open settings"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4" />
           </button>
         </div>
 
         {filteredAndSortedFlashcards.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center">
-            <p className="text-lg text-center mb-4">No flashcards found with the selected status filter.</p>
+            <p className="text-base text-center mb-4">No flashcards found with the selected status filter.</p>
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="px-4 py-2 text-sm font-medium text-white bg-[var(--primary)] rounded-lg hover:bg-[var(--primary)]/90"
@@ -345,25 +345,25 @@ export default function StudyPage() {
             </button>
           </div>
         ) : (
-          <>
+          <div className="flex flex-col h-full justify-center gap-2">
             {/* Current position indicator */}
-            <div className="mb-2 text-sm text-center text-gray-600">
+            <div className="text-sm text-center text-gray-600">
               Card {currentIndex + 1} of {filteredAndSortedFlashcards.length}
             </div>
 
             {/* Flashcard container with navigation */}
-            <div className="relative flex items-center flex-1 px-4 md:px-0">
+            <div className="relative flex items-center justify-center h-[40vh] sm:h-auto sm:flex-1 min-h-0">
               {/* Navigation button - Previous */}
               <button
                 onClick={handlePrevious}
-                className="absolute left-0 lg:-left-20 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
+                className="absolute left-0 lg:-left-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
                 aria-label="Previous Card"
               >
-                <ChevronLeft className="w-6 h-6" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
 
               {/* Flashcard Container */}
-              <div className="relative w-full overflow-hidden h-full">
+              <div className="relative w-full h-full max-h-[50vh] sm:max-h-[calc(100vh-250px)]">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div
                     key={`${currentIndex}-${filteredAndSortedFlashcards[currentIndex]?.id}`}
@@ -372,26 +372,26 @@ export default function StudyPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute inset-0 bg-white rounded-xl shadow-lg p-8 sm:p-12 flex flex-col items-center justify-center text-center w-full h-full"
+                    className="absolute inset-0 bg-white rounded-xl shadow-lg p-4 sm:p-6 flex flex-col items-center justify-center text-center max-h-[50vh] sm:max-h-none"
                   >
-                    <div className="absolute top-4 left-4">
-                      <StatusIndicator status={currentCard.status} size="lg" />
+                    <div className="absolute top-2 left-2">
+                      <StatusIndicator status={currentCard.status} size="md" />
                     </div>
                     
-                    <h2 className="text-3xl mb-8">
+                    <h2 className="text-2xl sm:text-3xl mb-2 sm:mb-4">
                       {swapQA ? currentCard.english_phrase : currentCard.tongan_phrase}
                     </h2>
                     
                     {showAnswer ? (
-                      <div className="h-[1px] w-full bg-gray-400 mb-8">
-                        <p className="text-xl pt-6">
+                      <div className="h-[1px] w-full bg-gray-400 mb-2 sm:mb-4">
+                        <p className="text-base sm:text-lg pt-2 sm:pt-4">
                           {swapQA ? currentCard.tongan_phrase : currentCard.english_phrase}
                         </p>
                       </div>
                     ) : (
                       <button
                         onClick={() => setShowAnswer(true)}
-                        className="primary-button"
+                        className="primary-button text-sm sm:text-base"
                       >
                         Show Answer
                       </button>
@@ -403,15 +403,15 @@ export default function StudyPage() {
               {/* Navigation button - Next */}
               <button
                 onClick={handleNext}
-                className="absolute right-0 lg:-right-20 hidden sm:flex items-center justify-center w-12 h-12 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
+                className="absolute right-0 lg:-right-20 hidden sm:flex items-center justify-center w-10 h-10 rounded-full bg-[var(--beige)] shadow-lg hover:bg-[var(--beige)]/50 z-10"
                 aria-label="Next Card"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
 
             {/* Rating buttons in separate container */}
-            <div className="flex justify-center gap-6 py-4">
+            <div className="flex justify-center gap-4 py-2 mt-2">
               <RatingButton
                 type="bad"
                 onClick={() => updateFlashcardStatus('bad')}
@@ -428,7 +428,7 @@ export default function StudyPage() {
                 currentStatus={currentCard.status}
               />
             </div>
-          </>
+          </div>
         )}
 
         {/* Add FlashcardSettings component */}

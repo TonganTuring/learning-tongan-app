@@ -161,6 +161,23 @@ export default function BiblePage() {
     return 'small';
   });
   
+  // Add isMobile state
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Add effect to detect mobile devices
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIfMobile);
+    };
+  }, []);
+
   // Memoize processed chapters
   const { esvChapter, tonganChapter } = useMemo(() => {
     return {
@@ -259,6 +276,17 @@ export default function BiblePage() {
         setIsReaderSettingsOpen(false);
       }, 200); // 200ms delay before closing
     }
+  }, []);
+
+  // Modify menu handlers to work with both touch and mouse
+  const handleBookSelectorToggle = useCallback(() => {
+    setIsReaderSettingsOpen(false);
+    setIsBookSelectorOpen(prev => !prev);
+  }, []);
+
+  const handleReaderSettingsToggle = useCallback(() => {
+    setIsBookSelectorOpen(false);
+    setIsReaderSettingsOpen(prev => !prev);
   }, []);
 
   // Cleanup timeouts on unmount
@@ -618,8 +646,8 @@ export default function BiblePage() {
           >
             <div 
               className="relative"
-              onMouseEnter={() => handleBookSelectorHover(true)}
-              onMouseLeave={() => handleBookSelectorHover(false)}
+              onMouseEnter={!isMobile ? () => handleBookSelectorHover(true) : undefined}
+              onMouseLeave={!isMobile ? () => handleBookSelectorHover(false) : undefined}
             >
               <BookSelector
                 isOpen={isBookSelectorOpen}
@@ -630,8 +658,8 @@ export default function BiblePage() {
 
             <div 
               className="relative"
-              onMouseEnter={() => handleReaderSettingsHover(true)}
-              onMouseLeave={() => handleReaderSettingsHover(false)}
+              onMouseEnter={!isMobile ? () => handleReaderSettingsHover(true) : undefined}
+              onMouseLeave={!isMobile ? () => handleReaderSettingsHover(false) : undefined}
             >
               <ReaderSettings
                 isOpen={isReaderSettingsOpen}
@@ -755,12 +783,12 @@ export default function BiblePage() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-4 bg-white rounded-xl shadow-xl px-4 sm:px-6 py-2 border border-black-100 min-w-[280px]">
           <div 
             className="relative"
-            onMouseEnter={() => handleBookSelectorHover(true)}
-            onMouseLeave={() => handleBookSelectorHover(false)}
+            onMouseEnter={!isMobile ? () => handleBookSelectorHover(true) : undefined}
+            onMouseLeave={!isMobile ? () => handleBookSelectorHover(false) : undefined}
           >
             <button
               className="font-semibold p-2 sm:p-3 rounded-full cursor-pointer text-sm sm:text-base whitespace-nowrap"
-              onClick={() => setIsBookSelectorOpen(true)}
+              onClick={handleBookSelectorToggle}
             >
               {memoizedEsvBible[book]?.name} {chapter}
             </button>
@@ -799,12 +827,13 @@ export default function BiblePage() {
             
             <div 
               className="relative"
-              onMouseEnter={() => handleReaderSettingsHover(true)}
-              onMouseLeave={() => handleReaderSettingsHover(false)}
+              onMouseEnter={!isMobile ? () => handleReaderSettingsHover(true) : undefined}
+              onMouseLeave={!isMobile ? () => handleReaderSettingsHover(false) : undefined}
             >
               <button
                 className="p-2 hover:bg-[var(--beige)] rounded-full"
                 aria-label="Text Settings"
+                onClick={handleReaderSettingsToggle}
               >
                 <Type className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>

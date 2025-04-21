@@ -12,7 +12,7 @@ export default function AboutPage() {
       <div className="flex-1 px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8 md:hidden">
-            <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+            <h1 className="text-3xl font-bold mb-4 flex items-center gap-2">
               <span role="img" aria-label="waving hand">👋</span>
               Malo e lelei, I'm Dean...
             </h1>
@@ -53,7 +53,7 @@ export default function AboutPage() {
                   It was hard.
                 </p>
                 <p>
-                  There aren't many resources online.
+                  There weren't many resources online.
                 </p>
                 <p>
                   So I built this app for Tongan learners like me.
@@ -66,7 +66,7 @@ export default function AboutPage() {
           </div>
 
           <section className="mb-16">
-            <h2 className="text-4xl font-bold mb-8 text-center">App Demo</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">App Demo</h2>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="md:col-span-2 bg-gray-200 rounded-lg aspect-video flex items-center justify-center">
                 <p className="text-gray-600">Video demo coming soon...</p>
@@ -75,16 +75,16 @@ export default function AboutPage() {
                 <h3 className="text-2xl font-bold mb-4 underline">Key Features</h3>
                 <ul className="space-y-3 text-lg">
                   <li><span className="font-semibold">Bible Reading:</span> Learn new words while reading with instant translations</li>
-                  <li><span className="font-semibold">Flashcards:</span> Save and review words you want to remember</li>
-                  <li><span className="font-semibold">Practice:</span> Test yourself with spaced repetition</li>
-                  <li><span className="font-semibold">Progress:</span> Set goals and track your growing vocabulary</li>
+                  <li><span className="font-semibold">Flashcards:</span> Save and review words you wanna remember</li>
+                  <li><span className="font-semibold">Practice:</span> Test yourself everyday</li>
+                  <li><span className="font-semibold">Progress:</span> Set goals and track everything you learn</li>
                 </ul>
               </div>
             </div>
           </section>
 
           <footer className="text-center text-gray-800 italic">
-            Pssst... I'm always down to meet cool people, lets <Link href="https://www.linkedin.com/in/deanuata/" className="text-primary hover:underline">connect</Link> or feel free to check out my <Link href="https://deanuata.com" className="text-primary hover:underline">personal website</Link>.
+            Pssst... I'm always down to meet cool people, lets <Link href="https://www.linkedin.com/in/deanuata/" className="text-primary hover:underline">connect</Link> or you can check out my <Link href="https://deanuata.com" className="text-primary hover:underline">personal website</Link>.
           </footer>
         </div>
       </div>
