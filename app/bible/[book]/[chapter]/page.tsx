@@ -780,45 +780,45 @@ export default function BiblePage() {
           </div>
         </div>
 
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-4 bg-white rounded-xl shadow-xl px-4 sm:px-6 py-2 border border-black-100 min-w-[280px]">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-4 bg-white rounded-xl shadow-xl px-4 sm:px-6 py-3 sm:py-2 border border-black-100 min-w-[280px]">
           <div 
             className="relative"
             onMouseEnter={!isMobile ? () => handleBookSelectorHover(true) : undefined}
             onMouseLeave={!isMobile ? () => handleBookSelectorHover(false) : undefined}
           >
             <button
-              className="font-semibold p-2 sm:p-3 rounded-full cursor-pointer text-sm sm:text-base whitespace-nowrap"
+              className="font-semibold p-2.5 sm:p-3 rounded-full cursor-pointer text-base sm:text-base whitespace-nowrap"
               onClick={handleBookSelectorToggle}
             >
               {memoizedEsvBible[book]?.name} {chapter}
             </button>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleParallelToggle}
-                className="p-2 hover:bg-[var(--beige)] rounded-full"
+                className="p-2.5 sm:p-2 hover:bg-[var(--beige)] rounded-full"
                 aria-label={isParallel ? "Switch to single column" : "Switch to parallel columns"}
               >
-                <Columns className={`w-4 h-4 sm:w-5 sm:h-5 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
+                <Columns className={`w-5 h-5 sm:w-4 sm:h-4 ${isParallel ? 'text-[var(--primary)]' : ''}`} />
               </button>
               
               {user && (
                 <button
                   onClick={handleBookmark}
                   disabled={isSaving}
-                  className="p-2 hover:bg-[var(--beige)] rounded-full relative"
+                  className="p-2.5 sm:p-2 hover:bg-[var(--beige)] rounded-full relative"
                   aria-label="Bookmark this chapter"
                 >
                   {isBookmarked ? (
-                    <BookmarkCheck className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" />
+                    <BookmarkCheck className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--primary)]" />
                   ) : (
-                    <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Bookmark className="w-5 h-5 sm:w-4 sm:h-4" />
                   )}
                   {isSaving && (
                     <div className="absolute inset-0 flex items-center justify-center bg-white/50 rounded-full">
-                      <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 sm:w-3 sm:h-3 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
                     </div>
                   )}
                 </button>
@@ -831,11 +831,11 @@ export default function BiblePage() {
               onMouseLeave={!isMobile ? () => handleReaderSettingsHover(false) : undefined}
             >
               <button
-                className="p-2 hover:bg-[var(--beige)] rounded-full"
+                className="p-2.5 sm:p-2 hover:bg-[var(--beige)] rounded-full"
                 aria-label="Text Settings"
                 onClick={handleReaderSettingsToggle}
               >
-                <Type className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Type className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
             </div>
           </div>        
