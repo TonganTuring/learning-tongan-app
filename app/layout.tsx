@@ -29,7 +29,7 @@ export const metadata = {
         url: '/seo_image.png',
         width: 1200,
         height: 630,
-        alt: 'Learning Tongan Language Online',
+        alt: 'LearningTongan.com - Learning Tongan Language Online',
       },
     ],
     locale: 'en_US',

@@ -68,8 +68,13 @@ export default function AboutPage() {
           <section className="mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center">App Demo</h2>
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="md:col-span-2 bg-gray-200 rounded-lg aspect-video flex items-center justify-center">
-                <p className="text-gray-600">Video demo coming soon...</p>
+              <div className="md:col-span-2 rounded-lg overflow-hidden relative" style={{ aspectRatio: '16/9' }}>
+                <iframe 
+                  src="https://www.loom.com/embed/40007093024346c3a93fe139fee64cb5?hide_owner=true&hide_share=true&hide_title=true&hideEmbedTopBar=true" 
+                  className="absolute top-0 left-0 w-full h-full"
+                  frameBorder="0" 
+                  allowFullScreen
+                />
               </div>
               <div>
                 <h3 className="text-2xl font-bold mb-4 underline">Key Features</h3>
